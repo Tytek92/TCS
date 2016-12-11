@@ -46,6 +46,7 @@ I2C_HandleTypeDef hi2c2;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
 
 UART_HandleTypeDef huart2;
@@ -66,6 +67,7 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM10_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
@@ -104,6 +106,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM11_Init();
   MX_USART2_UART_Init();
+  MX_TIM10_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -365,6 +368,22 @@ static void MX_TIM4_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
+/* TIM10 init function */
+static void MX_TIM10_Init(void)
+{
+
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 16;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 1000;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
   {
     Error_Handler();
   }
