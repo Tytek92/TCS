@@ -8,6 +8,7 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include Src/TIM10_general_task/subdir.mk
 -include Src/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/subdir.mk

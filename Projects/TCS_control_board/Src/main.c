@@ -36,6 +36,8 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "Basic_global_structures/global_structures.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -80,6 +82,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN 0 */
 
+
+
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -109,6 +114,11 @@ int main(void)
   MX_TIM10_Init();
 
   /* USER CODE BEGIN 2 */
+  //Stupid CubeMX does not set this shit
+  //to allow interrupts from capture/compare
+  TIM10->DIER |= TIM_DIER_CC1IE_Msk;
+  HAL_TIM_Base_Start(&htim10);
+  NVIC_SetPriority(TIM1_UP_TIM10_IRQn,15);
 
   /* USER CODE END 2 */
 
@@ -237,6 +247,7 @@ static void MX_I2C2_Init(void)
 static void MX_TIM1_Init(void)
 {
 
+  TIM_ClockConfigTypeDef sClockSourceConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
   TIM_OC_InitTypeDef sConfigOC;
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
@@ -247,6 +258,17 @@ static void MX_TIM1_Init(void)
   htim1.Init.Period = 0;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
   if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
     Error_Handler();

@@ -17,5 +17,6 @@ C_DEPS :=
 SUBDIRS := \
 Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc \
 Drivers/STM32F4xx_HAL_Driver/Src \
+Src/TIM10_general_task \
 Src \
 

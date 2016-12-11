@@ -31,7 +31,8 @@ Src/main.o: ../Src/main.c \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/Basic_global_structures/global_structures.h
 
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/main.h:
 
@@ -98,3 +99,5 @@ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM3
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/Basic_global_structures/global_structures.h:
