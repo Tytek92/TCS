@@ -112,7 +112,6 @@ int main(void)
   MX_TIM11_Init();
   MX_USART2_UART_Init();
   MX_TIM10_Init();
-
   /* USER CODE BEGIN 2 */
   //Stupid CubeMX does not set this shit
   //to allow interrupts from capture/compare
