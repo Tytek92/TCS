@@ -31,6 +31,5 @@
 "Src/freertos.o"
 "Src/main.o"
 "Src/stm32f4xx_hal_msp.o"
-"Src/stm32f4xx_hal_timebase_TIM.o"
 "Src/stm32f4xx_it.o"
 "Src/system_stm32f4xx.o"

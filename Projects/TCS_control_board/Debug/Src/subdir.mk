@@ -7,7 +7,6 @@ C_SRCS += \
 ../Src/freertos.c \
 ../Src/main.c \
 ../Src/stm32f4xx_hal_msp.c \
-../Src/stm32f4xx_hal_timebase_TIM.c \
 ../Src/stm32f4xx_it.c \
 ../Src/system_stm32f4xx.c 
 
@@ -15,7 +14,6 @@ OBJS += \
 ./Src/freertos.o \
 ./Src/main.o \
 ./Src/stm32f4xx_hal_msp.o \
-./Src/stm32f4xx_hal_timebase_TIM.o \
 ./Src/stm32f4xx_it.o \
 ./Src/system_stm32f4xx.o 
 
@@ -23,7 +21,6 @@ C_DEPS += \
 ./Src/freertos.d \
 ./Src/main.d \
 ./Src/stm32f4xx_hal_msp.d \
-./Src/stm32f4xx_hal_timebase_TIM.d \
 ./Src/stm32f4xx_it.d \
 ./Src/system_stm32f4xx.d 
 

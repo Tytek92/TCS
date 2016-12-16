@@ -64,6 +64,7 @@ TIM_HandleTypeDef htim11;
 UART_HandleTypeDef huart2;
 
 osThreadId Display_TaskHandle;
+osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -132,6 +133,11 @@ int main(void)
   //NVIC_SetPriority(TIM1_UP_TIM10_IRQn,15);
 
   /* USER CODE END 2 */
+
+  /* Create the mutex(es) */
+  /* definition and creation of Disp_BCD_State */
+  osMutexDef(Disp_BCD_State);
+  Disp_BCD_StateHandle = osMutexCreate(osMutex(Disp_BCD_State));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -564,7 +570,12 @@ void StartDisplay_Task(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  if( osMutexWait(Disp_BCD_StateHandle, 1000)== osOK)
+	  {
+		  HAL_GPIO_TogglePin(DP1_7SEG_GPIO_Port, DP1_7SEG_Pin);
+		  osMutexRelease(Disp_BCD_StateHandle);
+	  }
+	  osDelay(1000);
   }
   /* USER CODE END 5 */ 
 }

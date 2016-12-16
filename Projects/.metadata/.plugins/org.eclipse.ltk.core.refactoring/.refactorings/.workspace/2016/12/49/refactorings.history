@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;TCS_control_board/Src/TIM10_general_task/TIM10_general_task&apos;" deleteContents="false" description="Delete resource &apos;TCS_control_board/Src/TIM10_general_task/TIM10_general_task&apos;" element1="/TCS_control_board/Src/TIM10_general_task/TIM10_general_task" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1481480826509"/>
+</session>
