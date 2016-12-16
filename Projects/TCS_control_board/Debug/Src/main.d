@@ -32,6 +32,24 @@ Src/main.o: ../Src/main.c \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/CMSIS/Include/core_cmFunc.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/FreeRTOSConfig.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/portable.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/list.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/task.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
+ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
  C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/Basic_global_structures/global_structures.h
 
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/main.h:
@@ -99,5 +117,41 @@ C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM3
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Drivers/CMSIS/Include/core_cmFunc.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/FreeRTOSConfig.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/portable.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/list.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/task.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/queue.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/queue.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h:
+
+C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
 
 C:/Users/Tymoteusz/Documents/TCS_Project/Projects/TCS_control_board/Inc/Basic_global_structures/global_structures.h:
