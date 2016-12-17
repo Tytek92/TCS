@@ -48,6 +48,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "Basic_global_structures/global_structures.h"
+#include "My_code/BCD_display_driver.h"
 
 /* USER CODE END Includes */
 
@@ -64,6 +65,7 @@ TIM_HandleTypeDef htim11;
 UART_HandleTypeDef huart2;
 
 osThreadId Display_TaskHandle;
+osThreadId Dummy_display_uHandle;
 osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN PV */
@@ -83,6 +85,7 @@ static void MX_TIM4_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartDisplay_Task(void const * argument);
+void StartDummy_display_update(void const * argument);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
@@ -132,6 +135,7 @@ int main(void)
   //HAL_TIM_Base_Start(&htim10);
   //NVIC_SetPriority(TIM1_UP_TIM10_IRQn,15);
 
+
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -155,6 +159,10 @@ int main(void)
   /* definition and creation of Display_Task */
   osThreadDef(Display_Task, StartDisplay_Task, osPriorityNormal, 0, 128);
   Display_TaskHandle = osThreadCreate(osThread(Display_Task), NULL);
+
+  /* definition and creation of Dummy_display_u */
+  osThreadDef(Dummy_display_u, StartDummy_display_update, osPriorityIdle, 0, 128);
+  Dummy_display_uHandle = osThreadCreate(osThread(Dummy_display_u), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -578,6 +586,26 @@ void StartDisplay_Task(void const * argument)
 	  osDelay(1000);
   }
   /* USER CODE END 5 */ 
+}
+
+/* StartDummy_display_update function */
+void StartDummy_display_update(void const * argument)
+{
+  /* USER CODE BEGIN StartDummy_display_update */
+  /* Infinite loop */
+  for(;;)
+  {
+	  if(Disp_BCD_Data.displayed_character == 16)
+	  {
+		  Disp_BCD_Data.displayed_character = 0;
+	  }
+	  else
+	  {
+		  Disp_BCD_Data.displayed_character++;
+	  }
+	  osDelay(1000);
+  }
+  /* USER CODE END StartDummy_display_update */
 }
 
 /**
