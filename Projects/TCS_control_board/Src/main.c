@@ -129,6 +129,8 @@ int main(void)
   MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
+  Display_char(8);
+  Display_char(16);
   //Stupid CubeMX does not set this shit
   //to allow interrupts from capture/compare
   //TIM10->DIER |= TIM_DIER_CC1IE_Msk;

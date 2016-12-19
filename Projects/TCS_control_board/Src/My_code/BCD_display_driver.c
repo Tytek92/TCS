@@ -7,68 +7,42 @@
 #include "Basic_global_structures/global_structures.h"
 #include "My_code/BCD_display_driver.h"
 
-void Display_char()
-{
-	uint8_t character = Disp_BCD_Data.displayed_character;
 
-	switch (character)
-	{
-	case 0:
-		Disp_0_();
-		// BLAH BLAH BLAH COMMIT TEST
-		//aha
-		break;
-	case 1:
-		Disp_1_();
-		break;
-	case 2:
-		Disp_2_();
-		break;
-	case 3:
-		Disp_3_();
-		break;
-	case 4:
-		Disp_4_();
-		break;
-	case 5:
-		Disp_5_();
-		break;
-	case 6:
-		Disp_6_();
-		break;
-	case 7:
-		Disp_7_();
-		break;
-	case 8:
-		Disp_8_();
-		break;
-	case 9:
-		Disp_9_();
-		break;
-	case 10:
-		Disp_A_();
-		break;
-	case 11:
-		Disp_C_();
-		break;
-	case 12:
-		Disp_E_();
-		break;
-	case 13:
-		Disp_F_();
-		break;
-	case 14:
-		Disp_U_();
-		break;
-	case 15:
-		Disp_c_();
-		break;
-	case 16:
-		Disp_r_();
-		break;
-	default:
-		break;
-	}
+/*
+ * This is font for 7 segment display with 17 characters
+ */
+const uint8_t font[17] = {SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_E_BIT|SEG_F_BIT,  //0
+		SEG_B_BIT|SEG_C_BIT, 															//1
+		SEG_A_BIT|SEG_B_BIT|SEG_G_BIT|SEG_E_BIT|SEG_D_BIT,								//2
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_G_BIT,								//3
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_F_BIT|SEG_G_BIT,								//4
+		SEG_A_BIT|SEG_F_BIT|SEG_G_BIT|SEG_C_BIT|SEG_D_BIT,								//5
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_G_BIT|SEG_E_BIT,					//6
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT,													//7
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_E_BIT|SEG_F_BIT|SEG_G_BIT,			//8
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_F_BIT|SEG_G_BIT,					//9
+		SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_E_BIT|SEG_F_BIT|SEG_G_BIT,					//A
+		SEG_A_BIT|SEG_D_BIT|SEG_E_BIT|SEG_F_BIT|SEG_G_BIT,								//C
+		SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_E_BIT|SEG_G_BIT,								//U
+		SEG_A_BIT|SEG_D_BIT|SEG_E_BIT|SEG_F_BIT|SEG_G_BIT,								//E
+		SEG_D_BIT|SEG_E_BIT|SEG_G_BIT,													//c
+		SEG_A_BIT|SEG_E_BIT|SEG_F_BIT|SEG_G_BIT,										//F
+		SEG_E_BIT|SEG_G_BIT																//r
+};
+
+void Display_char(uint8_t char_number)
+{
+	uint8_t code = font[char_number];
+	/*
+	 * those shifts are required for proper bitband (SEG_x_REG) operation
+	 */
+	SEG_A_REG = code & SEG_A_BIT;
+	SEG_B_REG = (code & SEG_B_BIT)>>1;
+	SEG_C_REG = (code & SEG_C_BIT)>>2;
+	SEG_D_REG = (code & SEG_D_BIT)>>3;
+	SEG_E_REG = (code & SEG_E_BIT)>>4;
+	SEG_F_REG = (code & SEG_F_BIT)>>5;
+	SEG_G_REG = (code & SEG_G_BIT)>>6;
 }
 
 /*
