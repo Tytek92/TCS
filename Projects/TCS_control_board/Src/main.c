@@ -597,6 +597,13 @@ void StartDummy_display_update(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  SEG_A_REG = 0;
+	  	SEG_B_REG = 0;
+	  	SEG_C_REG = 0;
+	  	SEG_D_REG = 0;
+	  	SEG_E_REG =0;
+	  	SEG_F_REG = 0;
+	  	SEG_G_REG =0;
 	  if(Disp_BCD_Data.displayed_character == 16)
 	  {
 		  Disp_BCD_Data.displayed_character = 0;
@@ -605,7 +612,8 @@ void StartDummy_display_update(void const * argument)
 	  {
 		  Disp_BCD_Data.displayed_character++;
 	  }
-	  osDelay(1000);
+	  Display_char(Disp_BCD_Data.displayed_character);
+	  osDelay(600);
   }
   /* USER CODE END StartDummy_display_update */
 }
