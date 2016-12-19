@@ -595,6 +595,7 @@ void StartDummy_display_update(void const * argument)
 {
   /* USER CODE BEGIN StartDummy_display_update */
   /* Infinite loop */
+	//fixd
   for(;;)
   {
 	  SEG_A_REG = 0;

@@ -10,6 +10,7 @@
 
 /*
  * This is font for 7 segment display with 17 characters
+ * 19-12-2016 fixed fonts, banana fingers
  */
 const uint8_t font[17] = {SEG_A_BIT|SEG_B_BIT|SEG_C_BIT|SEG_D_BIT|SEG_E_BIT|SEG_F_BIT,  //0
 		SEG_B_BIT|SEG_C_BIT, 															//1
