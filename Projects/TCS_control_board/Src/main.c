@@ -49,6 +49,7 @@
 
 #include "Basic_global_structures/global_structures.h"
 #include "My_code/BCD_display_driver.h"
+#include "My_code/crc.h"
 
 /* USER CODE END Includes */
 
@@ -141,6 +142,17 @@ int main(void)
   //HAL_TIM_Base_Start(&htim10);
   //NVIC_SetPriority(TIM1_UP_TIM10_IRQn,15);
 
+  /*
+   * Test of CRC module
+   */
+
+  char tab[12] = {'a','b','c','d','e','f','g','h','i','j','k','l'};
+  uint8_t size = 1;
+
+  CRC->CR |= CRC_CR_RESET;
+
+  uint32_t result = CRC_CalcBlockCRCxxbits(tab, size);
+  uint32_t blah = result;
 
   /* USER CODE END 2 */
 
