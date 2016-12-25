@@ -55,6 +55,8 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
+CRC_HandleTypeDef hcrc;
+
 I2C_HandleTypeDef hi2c2;
 
 TIM_HandleTypeDef htim1;
@@ -84,6 +86,7 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_CRC_Init(void);
 void StartDisplay_Task(void const * argument);
 void StartDummy_display_update(void const * argument);
 
@@ -127,6 +130,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM11_Init();
   MX_USART2_UART_Init();
+  MX_CRC_Init();
 
   /* USER CODE BEGIN 2 */
   Display_char(8);
@@ -275,6 +279,18 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
+/* CRC init function */
+static void MX_CRC_Init(void)
+{
+
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
   {
     Error_Handler();
   }
