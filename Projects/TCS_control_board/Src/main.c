@@ -73,7 +73,7 @@ osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+extern union SERIAL_BUF serial_buffer;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,25 +134,28 @@ int main(void)
   MX_CRC_Init();
 
   /* USER CODE BEGIN 2 */
-  Display_char(8);
-  Display_char(16);
-  //Stupid CubeMX does not set this shit
-  //to allow interrupts from capture/compare
-  //TIM10->DIER |= TIM_DIER_CC1IE_Msk;
-  //HAL_TIM_Base_Start(&htim10);
-  //NVIC_SetPriority(TIM1_UP_TIM10_IRQn,15);
 
   /*
    * Test of CRC module
    */
+  serial_buffer.serial_buf_char[0]='a'; //0x61
+  serial_buffer.serial_buf_char[1]='b'; //0x62
+  serial_buffer.serial_buf_char[2]='c'; //0x63
+  serial_buffer.serial_buf_char[3]='d'; //0x64
 
-  char tab[12] = {'a','b','c','d','e','f','g','h','i','j','k','l'};
-  uint8_t size = 1;
+  uint32_t dummy = serial_buffer.serial_buf_4char[0]; //??? 0x64636261 wtf...
+  uint32_t dummy_revd = __REV(dummy);
+
+  serial_buffer.serial_buf_char[4]='e';
+  serial_buffer.serial_buf_char[5]='f';
+  serial_buffer.serial_buf_char[6]='g';
+  serial_buffer.serial_buf_char[7]='h';
 
   CRC->CR |= CRC_CR_RESET;
 
-  uint32_t result = CRC_CalcBlockCRCxxbits(tab, size);
-  uint32_t blah = result;
+  uint32_t result = CRC_CalcBlockCRCxxbits();
+  uint32_t blah = ~result;
+  uint32_t blah2 = blah^0xFFFFFFFF;
 
   /* USER CODE END 2 */
 
