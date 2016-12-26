@@ -66,7 +66,9 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim11;
 
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 
+DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 osThreadId Display_TaskHandle;
 osThreadId Dummy_display_uHandle;
 osMutexId Disp_BCD_StateHandle;
@@ -74,12 +76,22 @@ osMutexId Disp_BCD_StateHandle;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 extern union SERIAL_BUF serial_buffer;
+
+//Global variable for USART RX DMA circular operation
+char Rx_single_char = '\000';
+
+//Global variable for frame completition
+volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
+
+//Global variable for frame completition
+uint8_t serial_buffer_counter =0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_TIM1_Init(void);
@@ -102,9 +114,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN 0 */
 
-
-
-
 /* USER CODE END 0 */
 
 int main(void)
@@ -124,6 +133,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   MX_I2C2_Init();
   MX_TIM1_Init();
@@ -134,28 +144,56 @@ int main(void)
   MX_CRC_Init();
 
   /* USER CODE BEGIN 2 */
+	/*
+	 * TEST OF USART DMA PERIPHERIAL TO MEM CONFIG
+	 */
+	hdma_usart2_rx.Instance = DMA1_Stream5;
+	hdma_usart2_rx.Init.Channel = DMA_CHANNEL_4;
+	hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	hdma_usart2_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+	hdma_usart2_rx.Init.MemInc = DMA_MINC_ENABLE;
+	hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	hdma_usart2_rx.Init.Mode = DMA_CIRCULAR;
+	hdma_usart2_rx.Init.Priority = DMA_PRIORITY_LOW; // in future check if needs to be changed
+	hdma_usart2_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+	hdma_usart2_rx.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_HALFFULL;
+	hdma_usart2_rx.Init.MemBurst = DMA_MBURST_SINGLE;
+	hdma_usart2_rx.Init.PeriphBurst = DMA_PBURST_SINGLE;
+	HAL_DMA_Init(&hdma_usart2_rx);
 
-  /*
-   * Test of CRC module
-   */
-  serial_buffer.serial_buf_char[0]='a'; //0x61
-  serial_buffer.serial_buf_char[1]='b'; //0x62
-  serial_buffer.serial_buf_char[2]='c'; //0x63
-  serial_buffer.serial_buf_char[3]='d'; //0x64
+	// required link function
+	__HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
 
-  uint32_t dummy = serial_buffer.serial_buf_4char[0]; //??? 0x64636261 wtf...
-  uint32_t dummy_revd = __REV(dummy);
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	//start DMA receiving to Rx_single_char
+	HAL_UART_Receive_DMA(&huart2, &Rx_single_char, 1);
+	/*
+	 * TEST OF DMA MEM TO MEM CONFIG
+	 */
 
-  serial_buffer.serial_buf_char[4]='e';
-  serial_buffer.serial_buf_char[5]='f';
-  serial_buffer.serial_buf_char[6]='g';
-  serial_buffer.serial_buf_char[7]='h';
+	/*
+	 * Test of CRC module
+	 */
+	serial_buffer.serial_buf_char[0] = 'a'; //0x61
+	serial_buffer.serial_buf_char[1] = 'b'; //0x62
+	serial_buffer.serial_buf_char[2] = 'c'; //0x63
+	serial_buffer.serial_buf_char[3] = 'd'; //0x64
 
-  CRC->CR |= CRC_CR_RESET;
+	uint32_t dummy = serial_buffer.serial_buf_4char[0]; //??? 0x64636261 wtf...
+	uint32_t dummy_revd = __REV(dummy);
 
-  uint32_t result = CRC_CalcBlockCRCxxbits();
-  uint32_t blah = ~result;
-  uint32_t blah2 = blah^0xFFFFFFFF;
+	serial_buffer.serial_buf_char[4] = 'e';
+	serial_buffer.serial_buf_char[5] = 'f';
+	serial_buffer.serial_buf_char[6] = 'g';
+	serial_buffer.serial_buf_char[7] = 'h';
+
+	CRC->CR |= CRC_CR_RESET;
+
+	uint32_t result = CRC_CalcBlockCRCxxbits();
+	uint32_t blah = ~result;
+	uint32_t blah2 = blah ^ 0xFFFFFFFF;
+	// CRC TES PASSED!
 
   /* USER CODE END 2 */
 
@@ -165,15 +203,15 @@ int main(void)
   Disp_BCD_StateHandle = osMutexCreate(osMutex(Disp_BCD_State));
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+	/* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+	/* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
+	/* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the thread(s) */
@@ -186,11 +224,11 @@ int main(void)
   Dummy_display_uHandle = osThreadCreate(osThread(Dummy_display_u), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+	/* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+	/* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
  
 
@@ -201,13 +239,12 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1) {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
 
-  }
+	}
   /* USER CODE END 3 */
 
 }
@@ -538,6 +575,48 @@ static void MX_USART2_UART_Init(void)
 
 }
 
+/** 
+  * Enable DMA controller clock
+  * Configure DMA for memory to memory transfers
+  *   hdma_memtomem_dma2_stream0
+  */
+static void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* Configure DMA request hdma_memtomem_dma2_stream0 on DMA2_Stream0 */
+  hdma_memtomem_dma2_stream0.Instance = DMA2_Stream0;
+  hdma_memtomem_dma2_stream0.Init.Channel = DMA_CHANNEL_0;
+  hdma_memtomem_dma2_stream0.Init.Direction = DMA_MEMORY_TO_MEMORY;
+  hdma_memtomem_dma2_stream0.Init.PeriphInc = DMA_PINC_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream0.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
+  hdma_memtomem_dma2_stream0.Init.Mode = DMA_NORMAL;
+  hdma_memtomem_dma2_stream0.Init.Priority = DMA_PRIORITY_LOW;
+  hdma_memtomem_dma2_stream0.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_memtomem_dma2_stream0.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_memtomem_dma2_stream0.Init.PeriphBurst = DMA_PBURST_SINGLE;
+  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+        
+  
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -608,16 +687,14 @@ void StartDisplay_Task(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  if( osMutexWait(Disp_BCD_StateHandle, 1000)== osOK)
-	  {
-		  HAL_GPIO_TogglePin(DP1_7SEG_GPIO_Port, DP1_7SEG_Pin);
-		  osMutexRelease(Disp_BCD_StateHandle);
-	  }
-	  osDelay(1000);
-  }
+	/* Infinite loop */
+	for (;;) {
+		if (osMutexWait(Disp_BCD_StateHandle, 1000) == osOK) {
+			HAL_GPIO_TogglePin(DP1_7SEG_GPIO_Port, DP1_7SEG_Pin);
+			osMutexRelease(Disp_BCD_StateHandle);
+		}
+		osDelay(1000);
+	}
   /* USER CODE END 5 */ 
 }
 
@@ -625,28 +702,24 @@ void StartDisplay_Task(void const * argument)
 void StartDummy_display_update(void const * argument)
 {
   /* USER CODE BEGIN StartDummy_display_update */
-  /* Infinite loop */
+	/* Infinite loop */
 	//fixd
-  for(;;)
-  {
-	  SEG_A_REG = 0;
-	  	SEG_B_REG = 0;
-	  	SEG_C_REG = 0;
-	  	SEG_D_REG = 0;
-	  	SEG_E_REG =0;
-	  	SEG_F_REG = 0;
-	  	SEG_G_REG =0;
-	  if(Disp_BCD_Data.displayed_character == 16)
-	  {
-		  Disp_BCD_Data.displayed_character = 0;
-	  }
-	  else
-	  {
-		  Disp_BCD_Data.displayed_character++;
-	  }
-	  Display_char(Disp_BCD_Data.displayed_character);
-	  osDelay(600);
-  }
+	for (;;) {
+		SEG_A_REG = 0;
+		SEG_B_REG = 0;
+		SEG_C_REG = 0;
+		SEG_D_REG = 0;
+		SEG_E_REG = 0;
+		SEG_F_REG = 0;
+		SEG_G_REG = 0;
+		if (Disp_BCD_Data.displayed_character == 16) {
+			Disp_BCD_Data.displayed_character = 0;
+		} else {
+			Disp_BCD_Data.displayed_character++;
+		}
+		Display_char(Disp_BCD_Data.displayed_character);
+		osDelay(600);
+	}
   /* USER CODE END StartDummy_display_update */
 }
 
@@ -679,10 +752,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler */
-  /* User can add his own implementation to report the HAL error return state */
-  while(1) 
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	while (1) {
+	}
   /* USER CODE END Error_Handler */ 
 }
 
@@ -698,8 +770,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-    ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	/* User can add his own implementation to report the file name and line number,
+	 ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 
 }
