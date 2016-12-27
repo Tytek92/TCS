@@ -39,9 +39,20 @@
 /* USER CODE BEGIN 0 */
 #include "My_code/crc.h"
 extern char Rx_single_char;
+extern uint32_t Rx_4chars;
 extern union SERIAL_BUF serial_buffer;
 extern uint8_t serial_buffer_counter;
 extern volatile char Rx_whole_frame_buffer[];
+
+char a = '0';
+char b = '0';
+char c = '0';
+char d = '0';
+char e = '0';
+char f = '0';
+
+
+uint8_t counter=0;
 
 /* USER CODE END 0 */
 
@@ -175,17 +186,18 @@ void SysTick_Handler(void)
 void DMA1_Stream5_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
-	Rx_whole_frame_buffer[serial_buffer_counter]=Rx_single_char;
-	serial_buffer_counter++;
+
 	if(serial_buffer_counter==SERIAL_BUF_SIZE_Uint8t)
 	{
+
 		// DEPLOY ANOTHER DMA TO TRASFER THIS ARRAY to union serial_buffer
-		HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
+		//HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
 		//After this DMA request is complete, whole frame is transfered to the global union and can be processed
-		serial_buffer_counter=0;
+		//serial_buffer_counter=0;
 	}
   /* USER CODE END DMA1_Stream5_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart2_rx);
+
   /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
 
   /* USER CODE END DMA1_Stream5_IRQn 1 */
@@ -238,6 +250,14 @@ void DMA2_Stream0_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+/*
+ * This is invoked after DMA (yes, DMA) completes full transfer (4 times 8bits form UART)
+ */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	uint32_t zm= Rx_4chars;
+	uint32_t dummy = zm;
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

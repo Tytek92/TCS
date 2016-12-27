@@ -79,6 +79,7 @@ extern union SERIAL_BUF serial_buffer;
 
 //Global variable for USART RX DMA circular operation
 char Rx_single_char = '\000';
+volatile uint32_t Rx_4chars = '\000';
 
 //Global variable for frame completition
 volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
@@ -113,6 +114,14 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+void TransferComplete()
+{
+	uint32_t kurwa_mac = 1;
+}
+void TransferComplete2()
+{
+	uint32_t kurwa_mac = 1;
+}
 
 /* USER CODE END 0 */
 
@@ -166,8 +175,13 @@ int main(void)
 	__HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
 
 	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	HAL_StatusTypeDef status;
+
 	//start DMA receiving to Rx_single_char
-	HAL_UART_Receive_DMA(&huart2, &Rx_single_char, 1);
+	HAL_UART_Receive_DMA(&huart2, &Rx_4chars, 4);
+	status=HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_CPLT_CB_ID, TransferComplete);
+	HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID, TransferComplete2);
+
 	/*
 	 * TEST OF DMA MEM TO MEM CONFIG
 	 */
@@ -268,7 +282,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 64;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -278,12 +297,12 @@ void SystemClock_Config(void)
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -704,6 +723,8 @@ void StartDummy_display_update(void const * argument)
   /* USER CODE BEGIN StartDummy_display_update */
 	/* Infinite loop */
 	//fixd
+	uint32_t zm;
+	uint32_t zm2, zm3;
 	for (;;) {
 		SEG_A_REG = 0;
 		SEG_B_REG = 0;
@@ -719,6 +740,9 @@ void StartDummy_display_update(void const * argument)
 		}
 		Display_char(Disp_BCD_Data.displayed_character);
 		osDelay(600);
+		zm=serial_buffer.serial_buf_4char[0];
+		zm2=serial_buffer.serial_buf_4char[1];
+		zm3 = Rx_4chars;
 	}
   /* USER CODE END StartDummy_display_update */
 }
