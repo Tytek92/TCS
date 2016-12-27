@@ -79,7 +79,8 @@ extern union SERIAL_BUF serial_buffer;
 
 //Global variable for USART RX DMA circular operation
 char Rx_single_char = '\000';
-volatile uint32_t Rx_4chars = '\000';
+volatile uint32_t FrameBuffer[20] = {0};
+volatile uint32_t FrameBuffer2[20] = {0};
 
 //Global variable for frame completition
 volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
@@ -116,7 +117,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE BEGIN 0 */
 void TransferComplete()
 {
-	uint32_t kurwa_mac = 1;
+	uint32_t kurwa_mac = FrameBuffer2[0];
 }
 void TransferComplete2()
 {
@@ -154,7 +155,12 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 	/*
-	 * TEST OF USART DMA PERIPHERIAL TO MEM CONFIG
+	 * Short description:
+	 * DMA reads from UART2 Rx 8bytes at a time, and moves that data
+	 * in turns into memory M0 and M1. (does that N times, defined in HAL_UART_Receive_DMA(&huart2, &FrameBuffer, N);)
+	 * When transfer to M0 is complete then HAL_UART_RxCpltCallback is invoked.
+	 * When transfer to M1 is complete then my function is invoked. That is setup
+	 * by calling HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID,TransferComplete);
 	 */
 	hdma_usart2_rx.Instance = DMA1_Stream5;
 	hdma_usart2_rx.Init.Channel = DMA_CHANNEL_4;
@@ -173,14 +179,22 @@ int main(void)
 
 	// required link function
 	__HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
-
+	//make uart clean of trash
 	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 	HAL_StatusTypeDef status;
-
-	//start DMA receiving to Rx_single_char
-	HAL_UART_Receive_DMA(&huart2, &Rx_4chars, 4);
-	status=HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_CPLT_CB_ID, TransferComplete);
-	HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID, TransferComplete2);
+	//Register Callback (invoke my function TransferComplete) when transfer to memory M1 is completed
+	HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID,TransferComplete);
+	//Set M1 target memory base adress
+	DMA1_Stream5->M1AR = (uint32_t)FrameBuffer2;
+	//start DMA receiving to M0
+	HAL_UART_Receive_DMA(&huart2, &FrameBuffer, 80);
+	//Turn off preconfigured DMA for HAL workaround
+	DMA1_Stream5->CR &= ~DMA_SxCR_EN;
+	//Setup Double buffer for UART_RX_DMA
+	DMA1_Stream5->CR |= DMA_SxCR_DBM;
+	//Run DMA
+	DMA1_Stream5->CR |= DMA_SxCR_EN;
+	//The workaround is complete!
 
 	/*
 	 * TEST OF DMA MEM TO MEM CONFIG
@@ -740,9 +754,9 @@ void StartDummy_display_update(void const * argument)
 		}
 		Display_char(Disp_BCD_Data.displayed_character);
 		osDelay(600);
-		zm=serial_buffer.serial_buf_4char[0];
-		zm2=serial_buffer.serial_buf_4char[1];
-		zm3 = Rx_4chars;
+		zm=FrameBuffer[0];
+		zm2=FrameBuffer2[0];
+		//zm3 = Rx_4chars;
 	}
   /* USER CODE END StartDummy_display_update */
 }

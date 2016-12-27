@@ -43,6 +43,7 @@ extern uint32_t Rx_4chars;
 extern union SERIAL_BUF serial_buffer;
 extern uint8_t serial_buffer_counter;
 extern volatile char Rx_whole_frame_buffer[];
+extern volatile uint32_t FrameBuffer[];
 
 char a = '0';
 char b = '0';
@@ -238,9 +239,6 @@ void USART2_IRQHandler(void)
 void DMA2_Stream0_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
-	uint32_t one = serial_buffer.serial_buf_4char[0];
-
-	uint32_t two = serial_buffer.serial_buf_4char[1];
 
   /* USER CODE END DMA2_Stream0_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_memtomem_dma2_stream0);
@@ -251,12 +249,12 @@ void DMA2_Stream0_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 /*
- * This is invoked after DMA (yes, DMA) completes full transfer (4 times 8bits form UART)
+ * This is invoked after DMA (yes, DMA) completes full transfer to M0
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	uint32_t zm= Rx_4chars;
-	uint32_t dummy = zm;
+	uint32_t zm= FrameBuffer[0];
+
 }
 
 /* USER CODE END 1 */
