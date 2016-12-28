@@ -118,11 +118,16 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void TransferComplete()
 {
 	uint32_t kurwa_mac = FrameBuffer2[0];
+	/*
+	 * Here instruct DMA to calculate CRC, check it with what was received.
+	 * Do that by setting a mutex/semaphore to let task execute. Task will wait for second DMA callback [TODO] to proceed
+	 * If CRC matches proceed with filling proper structure [#########] fields with data from the frame
+	 * does that in turns with void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) located in stm32f4xx_it.c
+	 */
+	//check if this function executes quickly enough, otherwise try doing this using registers!
+	//HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
 }
-void TransferComplete2()
-{
-	uint32_t kurwa_mac = 1;
-}
+
 
 /* USER CODE END 0 */
 
