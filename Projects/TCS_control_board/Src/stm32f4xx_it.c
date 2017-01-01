@@ -4,7 +4,7 @@
   * @brief   Interrupt Service Routines.
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2016 STMicroelectronics
+  * COPYRIGHT(c) 2017 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -44,6 +44,7 @@ extern union SERIAL_BUF serial_buffer;
 extern uint8_t serial_buffer_counter;
 extern volatile char Rx_whole_frame_buffer[];
 extern volatile uint32_t FrameBuffer[];
+extern volatile uint8_t FrameBufferIndicator;
 
 char a = '0';
 char b = '0';
@@ -198,7 +199,6 @@ void DMA1_Stream5_IRQHandler(void)
 	}
   /* USER CODE END DMA1_Stream5_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart2_rx);
-
   /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
 
   /* USER CODE END DMA1_Stream5_IRQn 1 */
@@ -249,11 +249,11 @@ void DMA2_Stream0_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 /*
- * This is invoked after DMA (yes, DMA) completes full transfer to M0
+ * This function is called when FrameBuffer[20] is full
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	uint32_t zm= FrameBuffer[0];
+	//uint32_t zm= FrameBuffer[0];
 	/*
 	 * Here instruct DMA to calculate CRC, check it with what was received.
 	 * Do that by setting a mutex/semaphore to let task execute. Task will wait for second DMA callback [TODO] to proceed
@@ -262,6 +262,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	 */
 	//check if this function executes quickly enough, otherwise try doing this using registers!
 	//HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
+	FrameBufferIndicator = 1;
+	CRC->CR |= CRC_CR_RESET;
+	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer,(uint32_t)&CRC->DR,18);
 
 }
 
