@@ -47,4 +47,54 @@ struct Disp_BCD_Data {
 } Disp_BCD_Data;
 
 
+/*
+ * union TCS_input_data
+ * Contains data received from host controller
+ * access to this structure is guarded by osMutexId ##############
+ * Tasks accessing this structure:
+ * 									* #############
+ */
+union TCS_input_data{
+	struct Single_Fields{
+		uint32_t System_Mode;				/*System operation mode field
+		*/
+		uint32_t Linear_Velocity;			/*Linear target velocity
+			*/
+		uint32_t Turn_Angle;				/*Front axis turn angle
+			*/
+		uint32_t Velocity_Limit;			/*Linear speed boundary
+			*/
+		uint32_t Field4;					/*System operation mode field
+			*/
+		uint32_t Field5;					/*System operation mode field
+			*/
+		uint32_t Field6;					/*System operation mode field
+			*/
+		uint32_t Field7;					/*System operation mode field
+			*/
+		uint32_t Field8;					/*System operation mode field
+			*/
+		uint32_t Field9;					/*System operation mode field
+			*/
+		uint32_t Field10;					/*System operation mode field
+			*/
+		uint32_t Field11;					/*System operation mode field
+			*/
+		uint32_t Field12;					/*System operation mode field
+			*/
+		uint32_t Field13;					/*System operation mode field
+			*/
+		uint32_t Field14;					/*System operation mode field
+			*/
+		uint32_t Field15;					/*System operation mode field
+			*/
+		uint32_t Field16;					/*System operation mode field
+			*/
+		uint32_t Field17;					/*System operation mode field
+			*/
+	}Fields;
+	uint32_t Concatenated_Fields[18];
+};
+
+
 #endif /* BASIC_GLOBAL_STRUCTURES_GLOBAL_STRUCTURES_H_ */

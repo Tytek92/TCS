@@ -44,6 +44,13 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
+#include "adc.h"
+#include "crc.h"
+#include "dma.h"
+#include "i2c.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -54,36 +61,22 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
-
-CRC_HandleTypeDef hcrc;
-
-I2C_HandleTypeDef hi2c2;
-
-TIM_HandleTypeDef htim1;
-TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim4;
-TIM_HandleTypeDef htim11;
-
-UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
-
-DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
-DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
-osThreadId Display_TaskHandle;
-osThreadId Dummy_display_uHandle;
-osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-extern union SERIAL_BUF serial_buffer;
 
 //Global variable for USART RX DMA circular operation
 char Rx_single_char = '\000';
+//First buffer for UART (DMA)
 volatile uint32_t FrameBuffer[20] = {0};
+//Second buffer for UART (DMA)
 volatile uint32_t FrameBuffer2[20] = {0};
+//Which FrameBuffer is send to CRC block
 volatile uint8_t FrameBufferIndicator = 0;
+//Temporary variable for indication of correct CRC
 volatile uint8_t truth=0;
+//data structure that holds data received from host controller
+volatile union TCS_input_data TCS_input_data;
 
 //Global variable for frame completition
 volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
@@ -95,22 +88,7 @@ uint8_t serial_buffer_counter =0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void Error_Handler(void);
-static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_ADC1_Init(void);
-static void MX_I2C2_Init(void);
-static void MX_TIM1_Init(void);
-static void MX_TIM3_Init(void);
-static void MX_TIM4_Init(void);
-static void MX_TIM11_Init(void);
-static void MX_USART2_UART_Init(void);
-static void MX_CRC_Init(void);
-void StartDisplay_Task(void const * argument);
-void StartDummy_display_update(void const * argument);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                                
-                                
+void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -123,7 +101,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
  */
 void TransferComplete()
 {
-	//uint32_t kurwa_mac = FrameBuffer2[0];
 	/*
 	 * Here instruct DMA to calculate CRC, check it with what was received.
 	 * Do that by setting a mutex/semaphore to let task execute. Task will wait for second DMA callback [TODO] to proceed
@@ -132,9 +109,10 @@ void TransferComplete()
 	 */
 	//check if this function executes quickly enough, otherwise try doing this using registers!
 	FrameBufferIndicator = 2;
+	//reset CRC so it is 0xFFFFFFFF
 	CRC->CR |= CRC_CR_RESET;
+	//Start transfer to calculate CRC
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer2,(uint32_t)&CRC->DR,18);
-
 }
 
 /*
@@ -142,7 +120,6 @@ void TransferComplete()
  */
 void DMA_CRC_COMPLETE_Callback()
 {
-
 	SEG_A_REG = 0;
 	SEG_B_REG = 0;
 	SEG_C_REG = 0;
@@ -158,6 +135,8 @@ void DMA_CRC_COMPLETE_Callback()
 		{
 			truth = 1;
 			Display_char(truth);
+			//also setup mutex on TCS_input_data
+			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer2,(uint32_t)TCS_input_data.Concatenated_Fields,18);
 		}
 		else
 		{
@@ -171,6 +150,8 @@ void DMA_CRC_COMPLETE_Callback()
 		{
 			truth = 3;
 			Display_char(truth);
+			//also setup mutex on TCS_input_data
+			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer,(uint32_t)TCS_input_data.Concatenated_Fields,18);
 		}
 		else
 		{
@@ -178,6 +159,11 @@ void DMA_CRC_COMPLETE_Callback()
 			Display_char(truth);
 		}
 	}
+}
+
+void HOST_COMMAND_COMPLETE_Callback()
+{
+	//here free mutexes off TCS_input_data
 }
 
 
@@ -213,7 +199,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	/*
 	 * Short description:
-	 * DMA reads from UART2 Rx 8bytes at a time, and moves that data
+	 * DMA reads from UART2 Rx 8bits at a time, and moves that data
 	 * in turns into memory M0 and M1. (does that N times, defined in HAL_UART_Receive_DMA(&huart2, &FrameBuffer, N);)
 	 * When transfer to M0 is complete then HAL_UART_RxCpltCallback is invoked.
 	 * When transfer to M1 is complete then my function is invoked. That is setup
@@ -257,28 +243,32 @@ int main(void)
 	 * TEST OF DMA MEM TO MEM CONFIG FOR CRC CALCULATION
 	 */
 	//CALLBACK REGISTRATION
-	osDelay(500);
+	osDelay(500); // this delay is necessary to set those callback, otherwise they have chance to not me eqecuted (HAL_BUSY or some shit)
 	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream0, HAL_DMA_XFER_CPLT_CB_ID, DMA_CRC_COMPLETE_Callback);
+	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream1, HAL_DMA_XFER_CPLT_CB_ID, HOST_COMMAND_COMPLETE_Callback);
 
+	/*
+	 * DMA FRAME TO SETTINGS AND SET VALUE struct/union
+	 */
 
 	/*
 	 * Test of CRC module
 	 */
-	uint32_t dummy[19];
-	int i=0;
-	for(i=0; i<19; i++)
-	{
-		dummy[i] = 0x61626364;
-	}
-	CRC->CR |= CRC_CR_RESET;
-	for (i = 0; i<19; i++)
-	{
-		//this writes to CRC->DR (via cast to uint32_t the CRC_BASE address)
-		//*(__IO DATATYPE*)(CRC_BASE) = (uint32_t)dummy32;
-		CRC->DR = dummy[i];
-	}
-	uint32_t result = CRC->DR;
-	CRC->CR |= CRC_CR_RESET;
+//	uint32_t dummy[19];
+//	int i=0;
+//	for(i=0; i<19; i++)
+//	{
+//		dummy[i] = 0x61626364;
+//	}
+//	CRC->CR |= CRC_CR_RESET;
+//	for (i = 0; i<19; i++)
+//	{
+//		//this writes to CRC->DR (via cast to uint32_t the CRC_BASE address)
+//		//*(__IO DATATYPE*)(CRC_BASE) = (uint32_t)dummy32;
+//		CRC->DR = dummy[i];
+//	}
+//	uint32_t result = CRC->DR;
+//	CRC->CR |= CRC_CR_RESET;
 //	serial_buffer.serial_buf_char[0] = 'a'; //0x61
 //	serial_buffer.serial_buf_char[1] = 'b'; //0x62
 //	serial_buffer.serial_buf_char[2] = 'c'; //0x63
@@ -301,40 +291,8 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Create the mutex(es) */
-  /* definition and creation of Disp_BCD_State */
-  osMutexDef(Disp_BCD_State);
-  Disp_BCD_StateHandle = osMutexCreate(osMutex(Disp_BCD_State));
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-	/* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-	/* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-	/* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* Create the thread(s) */
-  /* definition and creation of Display_Task */
-  osThreadDef(Display_Task, StartDisplay_Task, osPriorityNormal, 0, 128);
-  Display_TaskHandle = osThreadCreate(osThread(Display_Task), NULL);
-
-  /* definition and creation of Dummy_display_u */
-  osThreadDef(Dummy_display_u, StartDummy_display_update, osPriorityIdle, 0, 128);
-  Dummy_display_uHandle = osThreadCreate(osThread(Dummy_display_u), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-	/* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-	/* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
- 
+  /* Call init function for freertos objects (in freertos.c) */
+  MX_FREERTOS_Init();
 
   /* Start scheduler */
   osKernelStart();
@@ -409,455 +367,9 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
 
-/* ADC1 init function */
-static void MX_ADC1_Init(void)
-{
-
-  ADC_ChannelConfTypeDef sConfig;
-
-    /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
-    */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
-    */
-  sConfig.Channel = ADC_CHANNEL_9;
-  sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
-/* CRC init function */
-static void MX_CRC_Init(void)
-{
-
-  hcrc.Instance = CRC;
-  if (HAL_CRC_Init(&hcrc) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
-/* I2C2 init function */
-static void MX_I2C2_Init(void)
-{
-
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
-  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
-/* TIM1 init function */
-static void MX_TIM1_Init(void)
-{
-
-  TIM_ClockConfigTypeDef sClockSourceConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_OC_InitTypeDef sConfigOC;
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
-
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 0;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
-  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
-  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
-  sBreakDeadTimeConfig.DeadTime = 0;
-  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
-  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
-  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  HAL_TIM_MspPostInit(&htim1);
-
-}
-
-/* TIM3 init function */
-static void MX_TIM3_Init(void)
-{
-
-  TIM_Encoder_InitTypeDef sConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-  TIM_OC_InitTypeDef sConfigOC;
-
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 0;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  HAL_TIM_MspPostInit(&htim3);
-
-}
-
-/* TIM4 init function */
-static void MX_TIM4_Init(void)
-{
-
-  TIM_Encoder_InitTypeDef sConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-
-  htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 0;
-  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 0;
-  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
-  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
-  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
-  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
-  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
-  if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
-/* TIM11 init function */
-static void MX_TIM11_Init(void)
-{
-
-  TIM_OC_InitTypeDef sConfigOC;
-
-  htim11.Instance = TIM11;
-  htim11.Init.Prescaler = 0;
-  htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim11.Init.Period = 0;
-  htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_Base_Init(&htim11) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_TIM_PWM_Init(&htim11) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim11, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  HAL_TIM_MspPostInit(&htim11);
-
-}
-
-/* USART2 init function */
-static void MX_USART2_UART_Init(void)
-{
-
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-}
-
-/** 
-  * Enable DMA controller clock
-  * Configure DMA for memory to memory transfers
-  *   hdma_memtomem_dma2_stream0
-  *   hdma_memtomem_dma2_stream1
-  */
-static void MX_DMA_Init(void) 
-{
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-  __HAL_RCC_DMA2_CLK_ENABLE();
-
-  /* Configure DMA request hdma_memtomem_dma2_stream0 on DMA2_Stream0 */
-  hdma_memtomem_dma2_stream0.Instance = DMA2_Stream0;
-  hdma_memtomem_dma2_stream0.Init.Channel = DMA_CHANNEL_0;
-  hdma_memtomem_dma2_stream0.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  hdma_memtomem_dma2_stream0.Init.PeriphInc = DMA_PINC_ENABLE;
-  hdma_memtomem_dma2_stream0.Init.MemInc = DMA_MINC_DISABLE;
-  hdma_memtomem_dma2_stream0.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-  hdma_memtomem_dma2_stream0.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-  hdma_memtomem_dma2_stream0.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma2_stream0.Init.Priority = DMA_PRIORITY_LOW;
-  hdma_memtomem_dma2_stream0.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-  hdma_memtomem_dma2_stream0.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-  hdma_memtomem_dma2_stream0.Init.MemBurst = DMA_MBURST_SINGLE;
-  hdma_memtomem_dma2_stream0.Init.PeriphBurst = DMA_PBURST_SINGLE;
-  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-        
-  
-
-  /* Configure DMA request hdma_memtomem_dma2_stream1 on DMA2_Stream1 */
-  hdma_memtomem_dma2_stream1.Instance = DMA2_Stream1;
-  hdma_memtomem_dma2_stream1.Init.Channel = DMA_CHANNEL_0;
-  hdma_memtomem_dma2_stream1.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  hdma_memtomem_dma2_stream1.Init.PeriphInc = DMA_PINC_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.MemInc = DMA_MINC_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-  hdma_memtomem_dma2_stream1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-  hdma_memtomem_dma2_stream1.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma2_stream1.Init.Priority = DMA_PRIORITY_LOW;
-  hdma_memtomem_dma2_stream1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
-  hdma_memtomem_dma2_stream1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-  hdma_memtomem_dma2_stream1.Init.MemBurst = DMA_MBURST_SINGLE;
-  hdma_memtomem_dma2_stream1.Init.PeriphBurst = DMA_PBURST_SINGLE;
-  if (HAL_DMA_Init(&hdma_memtomem_dma2_stream1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-        
-  
-
-  /* DMA interrupt init */
-  /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-  /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-
-}
-
-/** Configure pins as 
-        * Analog 
-        * Input 
-        * Output
-        * EVENT_OUT
-        * EXTI
-*/
-static void MX_GPIO_Init(void)
-{
-
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pins : PRG_BTN_Pin SYS_BTN_Pin */
-  GPIO_InitStruct.Pin = PRG_BTN_Pin|SYS_BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SET_Pin D2R_Pin D1R_Pin D2L_Pin 
-                           D1L_Pin */
-  GPIO_InitStruct.Pin = SET_Pin|D2R_Pin|D1R_Pin|D2L_Pin 
-                          |D1L_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : D_7SEG_Pin E_7SEG_Pin C_7SEG_Pin DP2_7SEG_Pin 
-                           A_7SEG_Pin B_7SEG_Pin */
-  GPIO_InitStruct.Pin = D_7SEG_Pin|E_7SEG_Pin|C_7SEG_Pin|DP2_7SEG_Pin 
-                          |A_7SEG_Pin|B_7SEG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : G_7SEG_Pin F_7SEG_Pin DP1_7SEG_Pin */
-  GPIO_InitStruct.Pin = G_7SEG_Pin|F_7SEG_Pin|DP1_7SEG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SET_Pin|D2R_Pin|D1R_Pin|D2L_Pin 
-                          |D1L_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, D_7SEG_Pin|E_7SEG_Pin|C_7SEG_Pin|DP2_7SEG_Pin 
-                          |A_7SEG_Pin|B_7SEG_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, G_7SEG_Pin|F_7SEG_Pin|DP1_7SEG_Pin, GPIO_PIN_RESET);
-
-}
-
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/* StartDisplay_Task function */
-void StartDisplay_Task(void const * argument)
-{
-
-  /* USER CODE BEGIN 5 */
-	/* Infinite loop */
-	for (;;) {
-		if (osMutexWait(Disp_BCD_StateHandle, 1000) == osOK) {
-			HAL_GPIO_TogglePin(DP1_7SEG_GPIO_Port, DP1_7SEG_Pin);
-			osMutexRelease(Disp_BCD_StateHandle);
-		}
-		osDelay(1000);
-	}
-  /* USER CODE END 5 */ 
-}
-
-/* StartDummy_display_update function */
-void StartDummy_display_update(void const * argument)
-{
-  /* USER CODE BEGIN StartDummy_display_update */
-	/* Infinite loop */
-	//fixd
-	uint32_t zm;
-	uint32_t zm2, zm3;
-	for (;;) {
-//		SEG_A_REG = 0;
-//		SEG_B_REG = 0;
-//		SEG_C_REG = 0;
-//		SEG_D_REG = 0;
-//		SEG_E_REG = 0;
-//		SEG_F_REG = 0;
-//		SEG_G_REG = 0;
-//		if (Disp_BCD_Data.displayed_character == 16) {
-//			Disp_BCD_Data.displayed_character = 0;
-//		} else {
-//			Disp_BCD_Data.displayed_character++;
-//		}
-//		Display_char(Disp_BCD_Data.displayed_character);
-		osDelay(600);
-		zm=FrameBuffer[0];
-		zm2=FrameBuffer2[0];
-		//zm3 = Rx_4chars;
-	}
-  /* USER CODE END StartDummy_display_update */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

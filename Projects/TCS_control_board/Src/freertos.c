@@ -44,24 +44,99 @@
 /* Includes ------------------------------------------------------------------*/
 #include "FreeRTOS.h"
 #include "task.h"
+#include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */     
 
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
+osThreadId Display_TaskHandle;
+osThreadId Dummy_display_uHandle;
+osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
+void StartDisplay_Task(void const * argument);
+void StartDummy_display_update(void const * argument);
+
+void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
 /* Hook prototypes */
+
+/* Init FreeRTOS */
+
+void MX_FREERTOS_Init(void) {
+  /* USER CODE BEGIN Init */
+       
+  /* USER CODE END Init */
+
+  /* Create the mutex(es) */
+  /* definition and creation of Disp_BCD_State */
+  osMutexDef(Disp_BCD_State);
+  Disp_BCD_StateHandle = osMutexCreate(osMutex(Disp_BCD_State));
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* Create the thread(s) */
+  /* definition and creation of Display_Task */
+  osThreadDef(Display_Task, StartDisplay_Task, osPriorityNormal, 0, 128);
+  Display_TaskHandle = osThreadCreate(osThread(Display_Task), NULL);
+
+  /* definition and creation of Dummy_display_u */
+  osThreadDef(Dummy_display_u, StartDummy_display_update, osPriorityIdle, 0, 128);
+  Dummy_display_uHandle = osThreadCreate(osThread(Dummy_display_u), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+}
+
+/* StartDisplay_Task function */
+void StartDisplay_Task(void const * argument)
+{
+
+  /* USER CODE BEGIN StartDisplay_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartDisplay_Task */
+}
+
+/* StartDummy_display_update function */
+void StartDummy_display_update(void const * argument)
+{
+  /* USER CODE BEGIN StartDummy_display_update */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartDummy_display_update */
+}
 
 /* USER CODE BEGIN Application */
      

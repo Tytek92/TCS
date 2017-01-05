@@ -38,11 +38,8 @@
 
 /* USER CODE BEGIN 0 */
 #include "My_code/crc.h"
-extern char Rx_single_char;
-extern uint32_t Rx_4chars;
-extern union SERIAL_BUF serial_buffer;
 extern uint8_t serial_buffer_counter;
-extern volatile char Rx_whole_frame_buffer[];
+
 extern volatile uint32_t FrameBuffer[];
 extern volatile uint8_t FrameBufferIndicator;
 
@@ -264,7 +261,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//check if this function executes quickly enough, otherwise try doing this using registers!
 	//HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
 	FrameBufferIndicator = 1;
+	//reset CRC so it is 0xFFFFFFFF
 	CRC->CR |= CRC_CR_RESET;
+	//Start transfer to calculate CRC
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer,(uint32_t)&CRC->DR,18);
 
 }
