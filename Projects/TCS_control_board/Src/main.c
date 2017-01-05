@@ -82,6 +82,8 @@ extern union SERIAL_BUF serial_buffer;
 char Rx_single_char = '\000';
 volatile uint32_t FrameBuffer[20] = {0};
 volatile uint32_t FrameBuffer2[20] = {0};
+volatile uint8_t FrameBufferIndicator = 0;
+volatile uint8_t truth=0;
 
 //Global variable for frame completition
 volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
@@ -116,9 +118,12 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+/*
+ * This function is called when FrameBuffer2[20] is full
+ */
 void TransferComplete()
 {
-	uint32_t kurwa_mac = FrameBuffer2[0];
+	//uint32_t kurwa_mac = FrameBuffer2[0];
 	/*
 	 * Here instruct DMA to calculate CRC, check it with what was received.
 	 * Do that by setting a mutex/semaphore to let task execute. Task will wait for second DMA callback [TODO] to proceed
@@ -126,7 +131,53 @@ void TransferComplete()
 	 * does that in turns with void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) located in stm32f4xx_it.c
 	 */
 	//check if this function executes quickly enough, otherwise try doing this using registers!
-	//HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)Rx_whole_frame_buffer,(uint32_t)serial_buffer.serial_buf_4char,2U);
+	FrameBufferIndicator = 2;
+	CRC->CR |= CRC_CR_RESET;
+	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer2,(uint32_t)&CRC->DR,18);
+
+}
+
+/*
+ * This function is called when DMA finishes transfering data from FrameBuffer/FrameBuffer2 to CRC data register
+ */
+void DMA_CRC_COMPLETE_Callback()
+{
+
+	SEG_A_REG = 0;
+	SEG_B_REG = 0;
+	SEG_C_REG = 0;
+	SEG_D_REG = 0;
+	SEG_E_REG = 0;
+	SEG_F_REG = 0;
+	SEG_G_REG = 0;
+	//Display_char(FrameBufferIndicator);
+	//Check the CRC value
+	if(FrameBufferIndicator == 2)
+	{
+		if(FrameBuffer2[18]==CRC->DR)
+		{
+			truth = 1;
+			Display_char(truth);
+		}
+		else
+		{
+			truth = 2;
+			Display_char(truth);
+		}
+	}
+	else
+	{
+		if(FrameBuffer[18]==CRC->DR)
+		{
+			truth = 3;
+			Display_char(truth);
+		}
+		else
+		{
+			truth = 4;
+			Display_char(truth);
+		}
+	}
 }
 
 
@@ -186,14 +237,14 @@ int main(void)
 	// required link function
 	__HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
 	//make uart clean of trash
-	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+//	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 	HAL_StatusTypeDef status;
 	//Register Callback (invoke my function TransferComplete) when transfer to memory M1 is completed
 	HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID,TransferComplete);
 	//Set M1 target memory base adress
 	DMA1_Stream5->M1AR = (uint32_t)FrameBuffer2;
 	//start DMA receiving to M0
-	HAL_UART_Receive_DMA(&huart2, &FrameBuffer, 80);
+	HAL_UART_Receive_DMA(&huart2, &FrameBuffer, 76);
 	//Turn off preconfigured DMA for HAL workaround
 	DMA1_Stream5->CR &= ~DMA_SxCR_EN;
 	//Setup Double buffer for UART_RX_DMA
@@ -203,31 +254,50 @@ int main(void)
 	//The workaround is complete!
 
 	/*
-	 * TEST OF DMA MEM TO MEM CONFIG
+	 * TEST OF DMA MEM TO MEM CONFIG FOR CRC CALCULATION
 	 */
+	//CALLBACK REGISTRATION
+	osDelay(500);
+	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream0, HAL_DMA_XFER_CPLT_CB_ID, DMA_CRC_COMPLETE_Callback);
+
 
 	/*
 	 * Test of CRC module
 	 */
-	serial_buffer.serial_buf_char[0] = 'a'; //0x61
-	serial_buffer.serial_buf_char[1] = 'b'; //0x62
-	serial_buffer.serial_buf_char[2] = 'c'; //0x63
-	serial_buffer.serial_buf_char[3] = 'd'; //0x64
-
-	uint32_t dummy = serial_buffer.serial_buf_4char[0]; //??? 0x64636261 wtf...
-	uint32_t dummy_revd = __REV(dummy);
-
-	serial_buffer.serial_buf_char[4] = 'e';
-	serial_buffer.serial_buf_char[5] = 'f';
-	serial_buffer.serial_buf_char[6] = 'g';
-	serial_buffer.serial_buf_char[7] = 'h';
-
+	uint32_t dummy[19];
+	int i=0;
+	for(i=0; i<19; i++)
+	{
+		dummy[i] = 0x61626364;
+	}
 	CRC->CR |= CRC_CR_RESET;
-
-	uint32_t result = CRC_CalcBlockCRCxxbits();
-	uint32_t blah = ~result;
-	uint32_t blah2 = blah ^ 0xFFFFFFFF;
-	// CRC TES PASSED!
+	for (i = 0; i<19; i++)
+	{
+		//this writes to CRC->DR (via cast to uint32_t the CRC_BASE address)
+		//*(__IO DATATYPE*)(CRC_BASE) = (uint32_t)dummy32;
+		CRC->DR = dummy[i];
+	}
+	uint32_t result = CRC->DR;
+	CRC->CR |= CRC_CR_RESET;
+//	serial_buffer.serial_buf_char[0] = 'a'; //0x61
+//	serial_buffer.serial_buf_char[1] = 'b'; //0x62
+//	serial_buffer.serial_buf_char[2] = 'c'; //0x63
+//	serial_buffer.serial_buf_char[3] = 'd'; //0x64
+//
+//	uint32_t dummy = serial_buffer.serial_buf_4char[0]; //??? 0x64636261 wtf...
+//	uint32_t dummy_revd = __REV(dummy);
+//
+//	serial_buffer.serial_buf_char[4] = 'e';
+//	serial_buffer.serial_buf_char[5] = 'f';
+//	serial_buffer.serial_buf_char[6] = 'g';
+//	serial_buffer.serial_buf_char[7] = 'h';
+//
+//	CRC->CR |= CRC_CR_RESET;
+//
+//	uint32_t result = CRC_CalcBlockCRCxxbits();
+//	uint32_t blah = ~result;
+//	uint32_t blah2 = blah ^ 0xFFFFFFFF;
+	// CRC TEST PASSED!
 
   /* USER CODE END 2 */
 
@@ -631,7 +701,7 @@ static void MX_DMA_Init(void)
   hdma_memtomem_dma2_stream0.Init.Channel = DMA_CHANNEL_0;
   hdma_memtomem_dma2_stream0.Init.Direction = DMA_MEMORY_TO_MEMORY;
   hdma_memtomem_dma2_stream0.Init.PeriphInc = DMA_PINC_ENABLE;
-  hdma_memtomem_dma2_stream0.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_memtomem_dma2_stream0.Init.MemInc = DMA_MINC_DISABLE;
   hdma_memtomem_dma2_stream0.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
   hdma_memtomem_dma2_stream0.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
   hdma_memtomem_dma2_stream0.Init.Mode = DMA_NORMAL;
@@ -768,19 +838,19 @@ void StartDummy_display_update(void const * argument)
 	uint32_t zm;
 	uint32_t zm2, zm3;
 	for (;;) {
-		SEG_A_REG = 0;
-		SEG_B_REG = 0;
-		SEG_C_REG = 0;
-		SEG_D_REG = 0;
-		SEG_E_REG = 0;
-		SEG_F_REG = 0;
-		SEG_G_REG = 0;
-		if (Disp_BCD_Data.displayed_character == 16) {
-			Disp_BCD_Data.displayed_character = 0;
-		} else {
-			Disp_BCD_Data.displayed_character++;
-		}
-		Display_char(Disp_BCD_Data.displayed_character);
+//		SEG_A_REG = 0;
+//		SEG_B_REG = 0;
+//		SEG_C_REG = 0;
+//		SEG_D_REG = 0;
+//		SEG_E_REG = 0;
+//		SEG_F_REG = 0;
+//		SEG_G_REG = 0;
+//		if (Disp_BCD_Data.displayed_character == 16) {
+//			Disp_BCD_Data.displayed_character = 0;
+//		} else {
+//			Disp_BCD_Data.displayed_character++;
+//		}
+//		Display_char(Disp_BCD_Data.displayed_character);
 		osDelay(600);
 		zm=FrameBuffer[0];
 		zm2=FrameBuffer2[0];
