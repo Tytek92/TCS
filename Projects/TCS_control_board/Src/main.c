@@ -84,6 +84,7 @@ volatile uint32_t FrameBuffer[20] = {0};
 volatile uint32_t FrameBuffer2[20] = {0};
 volatile uint8_t FrameBufferIndicator = 0;
 volatile uint8_t truth=0;
+volatile union TCS_input_data TCS_input_data;
 
 //Global variable for frame completition
 volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
@@ -259,26 +260,28 @@ int main(void)
 	//CALLBACK REGISTRATION
 	osDelay(500);
 	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream0, HAL_DMA_XFER_CPLT_CB_ID, DMA_CRC_COMPLETE_Callback);
-
+	/*
+	 * DMA FRAME TO SETTINGS AND SET VALUE struct/union
+	 */
 
 	/*
 	 * Test of CRC module
 	 */
-	uint32_t dummy[19];
-	int i=0;
-	for(i=0; i<19; i++)
-	{
-		dummy[i] = 0x61626364;
-	}
-	CRC->CR |= CRC_CR_RESET;
-	for (i = 0; i<19; i++)
-	{
-		//this writes to CRC->DR (via cast to uint32_t the CRC_BASE address)
-		//*(__IO DATATYPE*)(CRC_BASE) = (uint32_t)dummy32;
-		CRC->DR = dummy[i];
-	}
-	uint32_t result = CRC->DR;
-	CRC->CR |= CRC_CR_RESET;
+//	uint32_t dummy[19];
+//	int i=0;
+//	for(i=0; i<19; i++)
+//	{
+//		dummy[i] = 0x61626364;
+//	}
+//	CRC->CR |= CRC_CR_RESET;
+//	for (i = 0; i<19; i++)
+//	{
+//		//this writes to CRC->DR (via cast to uint32_t the CRC_BASE address)
+//		//*(__IO DATATYPE*)(CRC_BASE) = (uint32_t)dummy32;
+//		CRC->DR = dummy[i];
+//	}
+//	uint32_t result = CRC->DR;
+//	CRC->CR |= CRC_CR_RESET;
 //	serial_buffer.serial_buf_char[0] = 'a'; //0x61
 //	serial_buffer.serial_buf_char[1] = 'b'; //0x62
 //	serial_buffer.serial_buf_char[2] = 'c'; //0x63
