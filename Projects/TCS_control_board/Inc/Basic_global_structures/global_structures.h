@@ -56,7 +56,6 @@ struct Disp_BCD_Data {
  */
 union TCS_input_data{
 	struct Single_Fields{
-<<<<<<< HEAD
 		uint32_t System_Mode;				/*System operation mode field
 		*/
 		uint32_t Linear_Velocity;			/*Linear target velocity
@@ -64,15 +63,14 @@ union TCS_input_data{
 		uint32_t Turn_Angle;				/*Front axis turn angle
 			*/
 		uint32_t Velocity_Limit;			/*Linear speed boundary
-=======
+		 	*/
 		uint32_t Field0;					/*System operation mode field
-		*/
+		 	*/
 		uint32_t Field1;					/*Linear target velocity
 			*/
 		uint32_t Field2;					/*Front axis turn angle
 			*/
 		uint32_t Field3;					/*System operation mode field
->>>>>>> 37ac8cb2182c10310348de5e605f79e6613f7e81
 			*/
 		uint32_t Field4;					/*System operation mode field
 			*/
