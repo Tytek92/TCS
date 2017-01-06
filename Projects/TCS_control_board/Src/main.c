@@ -75,7 +75,10 @@ volatile uint32_t FrameBuffer2[20] = {0};
 volatile uint8_t FrameBufferIndicator = 0;
 //Temporary variable for indication of correct CRC
 volatile uint8_t truth=0;
+<<<<<<< HEAD
 //data structure that holds data received from host controller
+=======
+>>>>>>> 37ac8cb2182c10310348de5e605f79e6613f7e81
 volatile union TCS_input_data TCS_input_data;
 
 //Global variable for frame completition
@@ -245,8 +248,11 @@ int main(void)
 	//CALLBACK REGISTRATION
 	osDelay(500); // this delay is necessary to set those callback, otherwise they have chance to not me eqecuted (HAL_BUSY or some shit)
 	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream0, HAL_DMA_XFER_CPLT_CB_ID, DMA_CRC_COMPLETE_Callback);
+<<<<<<< HEAD
 	HAL_DMA_RegisterCallback(&hdma_memtomem_dma2_stream1, HAL_DMA_XFER_CPLT_CB_ID, HOST_COMMAND_COMPLETE_Callback);
 
+=======
+>>>>>>> 37ac8cb2182c10310348de5e605f79e6613f7e81
 	/*
 	 * DMA FRAME TO SETTINGS AND SET VALUE struct/union
 	 */
