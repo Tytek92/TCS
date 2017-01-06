@@ -46,8 +46,8 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
-
+/* USER CODE BEGIN Includes */
+#include "Basic_global_structures/global_structures.h"
 /* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
@@ -56,7 +56,8 @@ osThreadId Dummy_display_uHandle;
 osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN Variables */
-
+extern union FrameBuffer FrameBuffer;
+extern volatile union TCS_input_data TCS_input_data;
 /* USER CODE END Variables */
 
 /* Function prototypes -------------------------------------------------------*/
@@ -121,6 +122,8 @@ void StartDisplay_Task(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+	  uint32_t val = FrameBuffer.word[0];
+
     osDelay(1);
   }
   /* USER CODE END StartDisplay_Task */

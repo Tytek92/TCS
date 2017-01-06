@@ -46,6 +46,11 @@ struct Disp_BCD_Data {
     uint8_t displayed_character;
 } Disp_BCD_Data;
 
+union FrameBuffer{
+	char byte[76];
+	uint32_t word[19];
+};
+
 
 /*
  * union TCS_input_data

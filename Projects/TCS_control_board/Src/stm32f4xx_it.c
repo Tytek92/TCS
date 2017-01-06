@@ -264,7 +264,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//reset CRC so it is 0xFFFFFFFF
 	CRC->CR |= CRC_CR_RESET;
 	//Start transfer to calculate CRC
-	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer,(uint32_t)&CRC->DR,18);
+	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer,(uint32_t)&CRC->DR,19);
 
 }
 

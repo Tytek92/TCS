@@ -68,9 +68,11 @@
 //Global variable for USART RX DMA circular operation
 char Rx_single_char = '\000';
 //First buffer for UART (DMA)
-volatile uint32_t FrameBuffer[20] = {0};
+//volatile uint32_t FrameBuffer[20] = {0};
+volatile union FrameBuffer FrameBuffer;
 //Second buffer for UART (DMA)
-volatile uint32_t FrameBuffer2[20] = {0};
+volatile union FrameBuffer FrameBuffer2;
+//volatile uint32_t FrameBuffer2[20] = {0};
 //Which FrameBuffer is send to CRC block
 volatile uint8_t FrameBufferIndicator = 0;
 //Temporary variable for indication of correct CRC
@@ -114,7 +116,7 @@ void TransferComplete()
 	//reset CRC so it is 0xFFFFFFFF
 	CRC->CR |= CRC_CR_RESET;
 	//Start transfer to calculate CRC
-	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer2,(uint32_t)&CRC->DR,18);
+	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer2.word,(uint32_t)&CRC->DR,19);
 }
 
 /*
@@ -133,12 +135,12 @@ void DMA_CRC_COMPLETE_Callback()
 	//Check the CRC value
 	if(FrameBufferIndicator == 2)
 	{
-		if(FrameBuffer2[18]==CRC->DR)
+		if(0==CRC->DR)
 		{
 			truth = 1;
 			Display_char(truth);
 			//also setup mutex on TCS_input_data
-			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer2,(uint32_t)TCS_input_data.Concatenated_Fields,18);
+			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer2.word,(uint32_t)TCS_input_data.Concatenated_Fields,18);
 		}
 		else
 		{
@@ -148,12 +150,12 @@ void DMA_CRC_COMPLETE_Callback()
 	}
 	else
 	{
-		if(FrameBuffer[18]==CRC->DR)
+		if(0==CRC->DR)
 		{
 			truth = 3;
 			Display_char(truth);
 			//also setup mutex on TCS_input_data
-			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer,(uint32_t)TCS_input_data.Concatenated_Fields,18);
+			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer.word,(uint32_t)TCS_input_data.Concatenated_Fields,18);
 		}
 		else
 		{
@@ -230,9 +232,9 @@ int main(void)
 	//Register Callback (invoke my function TransferComplete) when transfer to memory M1 is completed
 	HAL_DMA_RegisterCallback(&hdma_usart2_rx, HAL_DMA_XFER_M1CPLT_CB_ID,TransferComplete);
 	//Set M1 target memory base adress
-	DMA1_Stream5->M1AR = (uint32_t)FrameBuffer2;
+	DMA1_Stream5->M1AR = (uint32_t)FrameBuffer2.byte;
 	//start DMA receiving to M0
-	HAL_UART_Receive_DMA(&huart2, &FrameBuffer, 76);
+	HAL_UART_Receive_DMA(&huart2, &FrameBuffer.byte, 76);
 	//Turn off preconfigured DMA for HAL workaround
 	DMA1_Stream5->CR &= ~DMA_SxCR_EN;
 	//Setup Double buffer for UART_RX_DMA
