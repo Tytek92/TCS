@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/Tymoteusz/Documents/TCS_Project/Projects/Control_Board/Inc
+HeaderPath=C:/Users/Tymoteusz/TCS/Projects/Control_Board/Inc
 HeaderFiles=gpio.h;crc.h;usart.h;stm32f0xx_it.h;stm32f0xx_hal_conf.h;main.h;
-SourcePath=C:/Users/Tymoteusz/Documents/TCS_Project/Projects/Control_Board/Src
+SourcePath=C:/Users/Tymoteusz/TCS/Projects/Control_Board/Src
 SourceFiles=gpio.h;crc.h;usart.h;stm32f0xx_it.h;stm32f0xx_hal_conf.h;main.h;gpio.c;crc.c;usart.c;stm32f0xx_it.c;stm32f0xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

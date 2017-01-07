@@ -50,7 +50,18 @@ union FrameBuffer{
 	uint32_t word[19];
 };
 
+union InputFrame{
+	char byte[8];
+	uint32_t word[2];
+};
+
 volatile union FrameBuffer FrameBuffer;
+volatile union InputFrame InputFrame;
+
+volatile char Input_Buffer[40] = {0};
+volatile uint8_t Input_Buffer_counter=0;
+
+
 
 /* USER CODE END PV */
 
@@ -88,6 +99,9 @@ int main(void)
   MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
+
+  //launch UART receive
+  HAL_UART_Receive_IT(&huart2,InputFrame.byte,8);
 
   char znak = 33;
   int i=0;
