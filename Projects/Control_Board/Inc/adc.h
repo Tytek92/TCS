@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : dma.h
-  * Description        : This file contains all the function prototypes for
-  *                      the dma.c file
+  * File Name          : ADC.h
+  * Description        : This file provides code for the configuration
+  *                      of the ADC instances.
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -42,9 +42,8 @@
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __dma_H
-#define __dma_H
-
+#ifndef __adc_H
+#define __adc_H
 #ifdef __cplusplus
  extern "C" {
 #endif
@@ -53,19 +52,19 @@
 #include "stm32f0xx_hal.h"
 #include "main.h"
 
-/* DMA memory to memory transfer handles -------------------------------------*/
-extern void Error_Handler(void);
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
+extern ADC_HandleTypeDef hadc;
+
 /* USER CODE BEGIN Private defines */
-DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE END Private defines */
 
-void MX_DMA_Init(void);
+extern void Error_Handler(void);
+
+void MX_ADC_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
@@ -74,8 +73,11 @@ void MX_DMA_Init(void);
 #ifdef __cplusplus
 }
 #endif
+#endif /*__ adc_H */
 
-#endif /* __dma_H */
+/**
+  * @}
+  */
 
 /**
   * @}

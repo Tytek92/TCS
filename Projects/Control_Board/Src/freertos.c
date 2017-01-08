@@ -1,8 +1,7 @@
 /**
   ******************************************************************************
-  * File Name          : dma.h
-  * Description        : This file contains all the function prototypes for
-  *                      the dma.c file
+  * File Name          : freertos.c
+  * Description        : Code for freertos applications
   ******************************************************************************
   *
   * Copyright (c) 2017 STMicroelectronics International N.V. 
@@ -41,44 +40,82 @@
   *
   ******************************************************************************
   */
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __dma_H
-#define __dma_H
-
-#ifdef __cplusplus
- extern "C" {
-#endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f0xx_hal.h"
-#include "main.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "cmsis_os.h"
 
-/* DMA memory to memory transfer handles -------------------------------------*/
-extern void Error_Handler(void);
-
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */     
 
 /* USER CODE END Includes */
 
-/* USER CODE BEGIN Private defines */
-DMA_HandleTypeDef hdma_usart2_rx;
+/* Variables -----------------------------------------------------------------*/
+osThreadId MainTaskHandle;
 
-/* USER CODE END Private defines */
+/* USER CODE BEGIN Variables */
 
-void MX_DMA_Init(void);
+/* USER CODE END Variables */
 
-/* USER CODE BEGIN Prototypes */
+/* Function prototypes -------------------------------------------------------*/
+void StartMainTask(void const * argument);
 
-/* USER CODE END Prototypes */
+void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
-#ifdef __cplusplus
+/* USER CODE BEGIN FunctionPrototypes */
+
+/* USER CODE END FunctionPrototypes */
+
+/* Hook prototypes */
+
+/* Init FreeRTOS */
+
+void MX_FREERTOS_Init(void) {
+  /* USER CODE BEGIN Init */
+       
+  /* USER CODE END Init */
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* Create the thread(s) */
+  /* definition and creation of MainTask */
+  osThreadDef(MainTask, StartMainTask, osPriorityNormal, 0, 128);
+  MainTaskHandle = osThreadCreate(osThread(MainTask), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
 }
-#endif
 
-#endif /* __dma_H */
+/* StartMainTask function */
+void StartMainTask(void const * argument)
+{
 
-/**
-  * @}
-  */
+  /* USER CODE BEGIN StartMainTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartMainTask */
+}
+
+/* USER CODE BEGIN Application */
+     
+/* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
