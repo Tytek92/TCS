@@ -87,6 +87,8 @@ volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
 
 //Global variable for frame completition
 uint8_t serial_buffer_counter =0;
+//
+char errorframe[8] = {0x41,0x41,0x41,0x41,0x41,0x41,0x41,0x41};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -124,6 +126,7 @@ void TransferComplete()
  */
 void DMA_CRC_COMPLETE_Callback()
 {
+	HAL_StatusTypeDef status;
 	SEG_A_REG = 0;
 	SEG_B_REG = 0;
 	SEG_C_REG = 0;
@@ -133,6 +136,8 @@ void DMA_CRC_COMPLETE_Callback()
 	SEG_G_REG = 0;
 	//Display_char(FrameBufferIndicator);
 	//Check the CRC value
+	uint32_t dummy = FrameBuffer.word[0];
+	uint32_t dummy2 = FrameBuffer2.word[0];
 	if(FrameBufferIndicator == 2)
 	{
 		if(0==CRC->DR)
@@ -144,8 +149,27 @@ void DMA_CRC_COMPLETE_Callback()
 		}
 		else
 		{
+			HAL_UART_Transmit(&huart2,errorframe,8,5000);
+			HAL_Delay(8);
+			int i = 0;
 			truth = 2;
 			Display_char(truth);
+			USART2 -> CR3 &= ~USART_CR3_DMAR;
+			USART2 -> CR1 &= ~USART_CR1_UE;
+			DMA1_Stream5->CR &= ~DMA_SxCR_EN;
+			while(!DMA1_Stream5->CR){}
+			DMA1_Stream5 -> NDTR = 76;
+			DMA1 -> HIFCR |= DMA_HIFCR_CTCIF5;
+
+			USART2->SR &= ~USART_SR_TC;
+
+			for(i=0; i<2000; i++)
+			{
+				asm("nop");
+			}
+			DMA1_Stream5->CR |= DMA_SxCR_EN;
+			USART2 -> CR3 |= USART_CR3_DMAR;
+			USART2 -> CR1 |= USART_CR1_UE;
 		}
 	}
 	else
@@ -159,8 +183,28 @@ void DMA_CRC_COMPLETE_Callback()
 		}
 		else
 		{
+			HAL_UART_Transmit(&huart2,errorframe,8,5000);
+			HAL_Delay(8);
+			int i = 0;
 			truth = 4;
 			Display_char(truth);
+			USART2 -> CR3 &= ~USART_CR3_DMAR;
+			USART2 -> CR1 &= ~USART_CR1_UE;
+			DMA1_Stream5->CR &= ~DMA_SxCR_EN;
+			while(!DMA1_Stream5){}
+			DMA1_Stream5 -> NDTR = 76;
+			DMA1 -> HIFCR |= DMA_HIFCR_CTCIF5;
+
+			USART2->SR &= ~USART_SR_TC;
+
+			for(i=0; i<2000; i++)
+			{
+				asm("nop");
+			}
+			DMA1_Stream5->CR |= DMA_SxCR_EN;
+			USART2 -> CR3 |= USART_CR3_DMAR;
+			USART2 -> CR1 |= USART_CR1_UE;
+
 		}
 	}
 }

@@ -57,6 +57,7 @@ osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN Variables */
 extern union FrameBuffer FrameBuffer;
+extern union FrameBuffer FrameBuffer2;
 extern volatile union TCS_input_data TCS_input_data;
 /* USER CODE END Variables */
 
@@ -123,6 +124,7 @@ void StartDisplay_Task(void const * argument)
   for(;;)
   {
 	  uint32_t val = FrameBuffer.word[0];
+	  uint32_t val2 = FrameBuffer2.word[0];
 
     osDelay(1);
   }

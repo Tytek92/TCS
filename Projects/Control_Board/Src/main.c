@@ -34,6 +34,7 @@
 #include "main.h"
 #include "stm32f0xx_hal.h"
 #include "crc.h"
+#include "dma.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -50,16 +51,14 @@ union FrameBuffer{
 	uint32_t word[19];
 };
 
-union InputFrame{
-	char byte[8];
-	uint32_t word[2];
-};
 
 volatile union FrameBuffer FrameBuffer;
 volatile union InputFrame InputFrame;
 
 volatile char Input_Buffer[40] = {0};
 volatile uint8_t Input_Buffer_counter=0;
+
+volatile uint8_t TransmissionError = 0;
 
 
 
@@ -95,13 +94,29 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_CRC_Init();
   MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
+  //configure DMA for USART2 Rx
+	hdma_usart2_rx.Instance = DMA1_Channel5;
+	hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+	hdma_usart2_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+	hdma_usart2_rx.Init.MemInc = DMA_MINC_ENABLE;
+	hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+	hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+	hdma_usart2_rx.Init.Mode = DMA_CIRCULAR;
+	hdma_usart2_rx.Init.Priority = DMA_PRIORITY_LOW; // in future check if needs to be changed
+	HAL_DMA_Init(&hdma_usart2_rx);
+
+	// required link function
+	__HAL_LINKDMA(&huart2, hdmarx, hdma_usart2_rx);
+	HAL_UART_Receive_DMA(&huart2, &InputFrame.byte, 8);
 
   //launch UART receive
-  HAL_UART_Receive_IT(&huart2,InputFrame.byte,8);
+  //HAL_UART_Receive_IT(&huart2,InputFrame.byte,8);
+
 
   char znak = 33;
   int i=0;
@@ -125,6 +140,7 @@ int main(void)
   //HAL_UART_Transmit(&huart2,FrameBuffer.word,8,5000);
 
   uint8_t counter = 0;
+  uint8_t message_counter = 0;
 
   /* USER CODE END 2 */
 
@@ -135,22 +151,53 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
+//	  if(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
+//	  {
+//		  counter++;
+//		  if(counter > 12)
+//		  {
+//			  if(1 == message_counter) // second message will be faulty
+//			  {
+//				  HAL_UART_Transmit(&huart2,FrameBuffer.word,75,5000);
+//			  }
+//			  else
+//			  {
+//				  HAL_UART_Transmit(&huart2,FrameBuffer.word,76,5000);
+//				  counter=0;
+//				  if(4 == message_counter)
+//				  {
+//					  message_counter = 0;
+//				  }
+//			  }
+//			  message_counter++;
+//			  //now play dead
+//			  HAL_Delay(230);
+//		  }
+//	  }
+//	  else
+//	  {
+//		  counter=0;
+//	  }
+	  if(10 == message_counter)
 	  {
-		  counter++;
-		  if(counter>12)
-		  {
-			  HAL_UART_Transmit(&huart2,FrameBuffer.word,76,5000);
-			  counter=0;
-			  //now play dead
-			  HAL_Delay(230);
-		  }
+		  HAL_UART_Transmit(&huart2,FrameBuffer.word,72,5000);
 	  }
 	  else
 	  {
-		  counter=0;
+		  if(1 == TransmissionError)
+		  {
+			  HAL_Delay(250);
+			  TransmissionError = 0;
+		  }
+		  HAL_UART_Transmit(&huart2,FrameBuffer.word,76,5000);
+		  //counter=0;
+		  if(20 == message_counter)
+		  {
+			  message_counter = 0;
+		  }
 	  }
-	  HAL_Delay(15);
+	  message_counter++;
+	  HAL_Delay(10);
 
   }
   /* USER CODE END 3 */

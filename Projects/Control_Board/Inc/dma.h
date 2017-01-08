@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.h
-  * Description        : This file contains the common defines of the application
+  * File Name          : dma.h
+  * Description        : This file contains all the function prototypes for
+  *                      the dma.c file
   ******************************************************************************
   *
   * COPYRIGHT(c) 2017 STMicroelectronics
@@ -31,32 +32,43 @@
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
+#ifndef __dma_H
+#define __dma_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+/* Includes ------------------------------------------------------------------*/
+#include "stm32f0xx_hal.h"
+#include "main.h"
+
+/* DMA memory to memory transfer handles -------------------------------------*/
+extern void Error_Handler(void);
 
 /* USER CODE BEGIN Includes */
-#include "inttypes.h"
 
 /* USER CODE END Includes */
 
-/* Private define ------------------------------------------------------------*/
-
 /* USER CODE BEGIN Private defines */
-union InputFrame{
-	char byte[8];
-	uint32_t word[2];
-};
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE END Private defines */
 
-/**
-  * @}
-  */ 
+void MX_DMA_Init(void);
+
+/* USER CODE BEGIN Prototypes */
+
+/* USER CODE END Prototypes */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __dma_H */
 
 /**
   * @}
-*/ 
+  */
 
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

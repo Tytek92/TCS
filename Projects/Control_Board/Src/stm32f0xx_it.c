@@ -36,11 +36,15 @@
 #include "stm32f0xx_it.h"
 
 /* USER CODE BEGIN 0 */
+#include "main.h"
+extern volatile union InputFrame InputFrame;
 extern volatile char Input_Buffer[];
 extern volatile uint8_t Input_Buffer_Counter;
+extern volatile uint8_t TransmissionError;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern DMA_HandleTypeDef hdma_usart2_rx;
 extern UART_HandleTypeDef huart2;
 
 /******************************************************************************/
@@ -125,6 +129,20 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+* @brief This function handles DMA1 channel 4 and 5 interrupts.
+*/
+void DMA1_Channel4_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel4_5_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel4_5_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart2_rx);
+  /* USER CODE BEGIN DMA1_Channel4_5_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel4_5_IRQn 1 */
+}
+
+/**
 * @brief This function handles USART2 global interrupt.
 */
 void USART2_IRQHandler(void)
@@ -143,7 +161,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(USART2==huart->Instance)
 	{
-
+		if(0x41414141==InputFrame.word[0])
+		{
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
+			TransmissionError = 1;
+		}
+		else
+		{
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
+		}
+		//HAL_UART_Receive_IT(&huart2,InputFrame.byte,8);
 	}
 }
 
