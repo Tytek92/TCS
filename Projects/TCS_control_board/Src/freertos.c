@@ -46,7 +46,7 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */     
 #include "Basic_global_structures/global_structures.h"
 /* USER CODE END Includes */
 
