@@ -50,8 +50,38 @@
 /* USER CODE BEGIN 0 */
 
 /*
- * TIM9 is timeout timer.
+ * TIM9 timeout timer config.
  */
+/* TIM9 init function */
+void Timeout_TIM9_Init(void)
+{
+  /TIM_OC_InitTypeDef sConfigOC;
+  TIM_OnePulse_InitTypeDef sConfigOP;
+
+  htim9.Instance = TIM9;
+  htim9.Init.Prescaler = 10;
+  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim9.Init.Period = 63999;
+  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_OnePulse_Init(&htim9) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sConfigOP.OCMode = TIM_OCMODE_TIMING;
+  sConfigOP.Pulse = 0;
+  sConfigOP.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+//  sConfigOC.OCMode = TIM_OCMODE_TIMING;
+//  sConfigOC.Pulse = 0;
+//  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+//  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_OnePulse_ConfigChannel(&htim9, &sConfigOP, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
 
 /* USER CODE END 0 */
 
