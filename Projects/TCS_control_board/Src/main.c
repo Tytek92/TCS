@@ -244,6 +244,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
+  MX_TIM9_Init();
 
   /* USER CODE BEGIN 2 */
 	/*
