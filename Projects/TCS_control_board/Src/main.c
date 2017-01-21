@@ -244,9 +244,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
-  MX_TIM9_Init();
 
   /* USER CODE BEGIN 2 */
+  /*
+   * Timeout timer test.
+   */
+  //run my config for timeout timer
+  Timeout_TIM9_Init();
+TIM9->CR1 |= TIM_CR1_CEN;
+
 	/*
 	 * Short description:
 	 * DMA reads from UART2 Rx 8bits at a time, and moves that data
@@ -299,6 +305,7 @@ int main(void)
 	/*
 	 * DMA FRAME TO SETTINGS AND SET VALUE struct/union
 	 */
+	TIM9->CR1 |= TIM_CR1_CEN;
 
 	/*
 	 * Test of CRC module
@@ -437,6 +444,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
 /* USER CODE BEGIN Callback 1 */
+	if(htim->Instance == TIM9)
+	{
+		uint32_t dummy = 1;
+	}
 
 /* USER CODE END Callback 1 */
 }

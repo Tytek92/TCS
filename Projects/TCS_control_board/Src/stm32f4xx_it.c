@@ -59,7 +59,6 @@ uint8_t counter=0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
 extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim9;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern UART_HandleTypeDef huart2;
 
@@ -212,8 +211,12 @@ void TIM1_BRK_TIM9_IRQHandler(void)
 
   /* USER CODE END TIM1_BRK_TIM9_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
-  HAL_TIM_IRQHandler(&htim9);
   /* USER CODE BEGIN TIM1_BRK_TIM9_IRQn 1 */
+  if(TIM9->SR & TIM_SR_UIF_Msk)
+  {
+	  uint32_t dummy = 111;
+	  TIM9->SR &= ~TIM_SR_UIF;//reset interrupt flag
+  }
 
   /* USER CODE END TIM1_BRK_TIM9_IRQn 1 */
 }
