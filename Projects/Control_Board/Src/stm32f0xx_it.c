@@ -199,5 +199,16 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 }
 
+void TIM16_IRQHandler(void)
+{
+
+	if(TIM16->SR & TIM_SR_UIF_Msk)
+	{
+		uint32_t dummy = 111;
+		TIM16->SR &= ~TIM_SR_UIF;//reset interrupt flag
+	}
+
+}
+
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

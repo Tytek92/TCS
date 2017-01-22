@@ -89,6 +89,19 @@ void MX_FREERTOS_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+void Timeout_TIM16_Init(void)
+{
+	RCC->APB2ENR |= RCC_APB2ENR_TIM16EN; // turn on clock for TIM16
+	TIM16->CR1 |= TIM_CR1_ARPE; //auto reload preload
+	//when ARR value is changed, then it is buffered until next overflow/compara match ect.
+	//to prevent for exampe missing ARR value and couting up to max CNT value
+	TIM16->CR1 |= TIM_CR1_OPM; //one pulse mode. Timer stops after update event.
+	TIM16->DIER |= TIM_DIER_UIE; // update interrupt enable
+	TIM16->PSC = 10;
+	TIM16->ARR = 63999;
+    HAL_NVIC_SetPriority(TIM16_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(TIM16_IRQn);
+}
 
 /* USER CODE END 0 */
 
@@ -115,6 +128,8 @@ int main(void)
   MX_ADC_Init();
 
   /* USER CODE BEGIN 2 */
+  Timeout_TIM16_Init();
+  TIM16->CR1 |= TIM_CR1_CEN;
   //configure DMA for USART2 Rx
 	hdma_usart2_rx.Instance = DMA1_Channel5;
 	hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -154,7 +169,7 @@ int main(void)
   FrameBuffer.word[18]=crc;
 
   //HAL_UART_Transmit(&huart2,FrameBuffer.word,8,5000);
-
+  TIM16->CR1 |= TIM_CR1_CEN;
   uint8_t counter = 0;
   uint8_t message_counter = 0;
 
