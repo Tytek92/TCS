@@ -46,7 +46,8 @@
 #include "task.h"
 #include "cmsis_os.h"
 
-/* USER CODE BEGIN Includes */     
+/* USER CODE BEGIN Includes */
+#include "gpio.h"
 
 /* USER CODE END Includes */
 
@@ -54,6 +55,17 @@
 osThreadId MainTaskHandle;
 
 /* USER CODE BEGIN Variables */
+extern uint8_t Run_communication;
+extern uint8_t comm_running;
+extern uint8_t timeout_counter;
+extern volatile uint8_t timeout_event;
+
+extern volatile union FrameBuffer FrameBuffer;
+
+union FrameBuffer{
+	char byte[76];
+	uint32_t word[19];
+};
 
 /* USER CODE END Variables */
 
@@ -105,13 +117,57 @@ void MX_FREERTOS_Init(void) {
 void StartMainTask(void const * argument)
 {
 
-  /* USER CODE BEGIN StartMainTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartMainTask */
+	/* USER CODE BEGIN StartMainTask */
+	uint8_t button_loop_counter = 0;
+	/* Infinite loop */
+	for(;;)
+	{
+		if(0 == Run_communication)// if transmission is launched, ignore the button
+		{
+			if(0 == HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5))// wait for button press to launch transmission
+			{
+				button_loop_counter++;
+				if(button_loop_counter >= 170)
+				{
+					Run_communication = 1;
+				}
+			}
+			else
+			{
+				button_loop_counter = 0;
+			}
+		}
+		else
+		{
+			if(0 == comm_running) //if there is no ongoing transmission or timeout was reached, send next frame
+			{
+				HAL_UART_Transmit_IT(&huart2,FrameBuffer.word,76,5000); //transmit frame with CRC
+				Timeout_start(); //start transmission timeout
+				comm_running = 1; //indicate that transmission routine is running
+			}
+			else
+			{
+				//comm is running, wait for ACK or timeout
+				if(1 == timeout_event) //timeout event occured
+				{
+					if(timeout_counter >= 10) //too many timeouts, wait for manual start. Flash an LED
+					{
+						comm_running = 0;
+						Run_communication = 0; //enable launching transmission using user button
+						timeout_event = 0; //reset the event flag
+					}
+					else
+					{
+						//this is simple timeout with no ACK or ERR
+						//send another frame
+						timeout_event = 0; //reset the event flag
+					}
+				}
+			}
+		}
+		osDelay(1);
+	}
+	/* USER CODE END StartMainTask */
 }
 
 /* USER CODE BEGIN Application */

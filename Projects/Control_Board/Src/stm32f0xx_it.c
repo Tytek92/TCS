@@ -38,10 +38,14 @@
 
 /* USER CODE BEGIN 0 */
 #include "main.h"
+#include "My_code/timeout.h"
 extern volatile union InputFrame InputFrame;
 extern volatile char Input_Buffer[];
 extern volatile uint8_t Input_Buffer_Counter;
 extern volatile uint8_t TransmissionError;
+
+extern uint8_t timeout_counter;
+extern volatile uint8_t timeout_event;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -181,16 +185,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(USART2==huart->Instance)
 	{
-		if(0x41414141==InputFrame.word[0])
+		if(0x41414141==InputFrame.word[0])//ACK RECEIVED
 		{
-			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_SET);
-			TransmissionError = 1;
+			Timeout_abort();//stop timeout timer
+			comm_running = 0;//set flag that the communication is complete
+			//now task can send another FRAME
 		}
 		else
 		{
-			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,GPIO_PIN_RESET);
+			if(0x40404040==InputFrame.word[0])//ERROR
+			{
+				Timeout_abort();//stop timeout timer
+				comm_running = 0;//set flag that the communication is complete
+
+			}
 		}
 		//HAL_UART_Receive_IT(&huart2,InputFrame.byte,8);
+	}
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(USART2==huart->Instance)
+	{
+
 	}
 }
 
@@ -201,10 +219,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 void TIM16_IRQHandler(void)
 {
-
+	//Timeout of receiving ACK or ERR occured
 	if(TIM16->SR & TIM_SR_UIF_Msk)
 	{
 		uint32_t dummy = 111;
+		timeout_counter++;
+		timeout_event = 1;
 		TIM16->SR &= ~TIM_SR_UIF;//reset interrupt flag
 	}
 
