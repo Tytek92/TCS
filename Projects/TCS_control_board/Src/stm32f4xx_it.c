@@ -38,10 +38,12 @@
 
 /* USER CODE BEGIN 0 */
 #include "My_code/crc.h"
+#include "My_code/timeout.h"
 extern uint8_t serial_buffer_counter;
 
 extern volatile uint32_t FrameBuffer[];
 extern volatile uint8_t FrameBufferIndicator;
+extern volatile uint8_t TimeoutEventFlag;
 
 char a = '0';
 char b = '0';
@@ -241,13 +243,16 @@ void TIM1_UP_TIM10_IRQHandler(void)
 */
 void USART2_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART2_IRQn 0 */
+	/* USER CODE BEGIN USART2_IRQn 0 */
+	//disable receive interrupt (not needed during whole transfer)
+	USART2->CR1 &= ~USART_CR1_RXNEIE;
+	//Start timeout timer
+	Timeout_start();
+	/* USER CODE END USART2_IRQn 0 */
+	HAL_UART_IRQHandler(&huart2);
+	/* USER CODE BEGIN USART2_IRQn 1 */
 
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
+	/* USER CODE END USART2_IRQn 1 */
 }
 
 /**
@@ -285,6 +290,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	//Start transfer to calculate CRC
 	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer,(uint32_t)&CRC->DR,19);
 
+}
+
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+	uint32_t dummy_dummy=32;
 }
 
 /* USER CODE END 1 */

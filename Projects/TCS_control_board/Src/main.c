@@ -57,6 +57,7 @@
 #include "Basic_global_structures/global_structures.h"
 #include "My_code/BCD_display_driver.h"
 #include "My_code/crc.h"
+#include "My_code/timeout.h"
 
 /* USER CODE END Includes */
 
@@ -89,6 +90,8 @@ volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
 uint8_t serial_buffer_counter =0;
 //
 char errorframe[8] = {0x41,0x41,0x41,0x41,0x41,0x41,0x41,0x41};
+
+extern volatile uint8_t TimeoutEventFlag;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -140,15 +143,23 @@ void DMA_CRC_COMPLETE_Callback()
 	uint32_t dummy2 = FrameBuffer2.word[0];
 	if(FrameBufferIndicator == 2)
 	{
-		if(0==CRC->DR)
+		if(0==CRC->DR)//CRC is correct!
 		{
+			Timeout_abort(); //stop the timeout timer
+			USART2->CR1 |= USART_CR1_RXNEIE; //enable incoming transmission interrupt
+			HAL_UART_Transmit_IT(&huart2,errorframe,8);//SEND ACK
 			truth = 1;
 			Display_char(truth);
 			//also setup mutex on TCS_input_data
 			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer2.word,(uint32_t)TCS_input_data.Concatenated_Fields,18);
 		}
 		else
-		{
+		{	//CRC is not correct
+			//check if DMA_SxNDTR is equal to 76 (no orpahned bytes)
+			if(76 != DMA1_Stream5 -> NDTR)
+			{
+				//something went wrong! Clean up mess
+			}
 			HAL_UART_Transmit(&huart2,errorframe,8,5000);
 			HAL_Delay(8);
 			int i = 0;
@@ -176,6 +187,9 @@ void DMA_CRC_COMPLETE_Callback()
 	{
 		if(0==CRC->DR)
 		{
+			Timeout_abort(); //stop the timeout timer
+			USART2->CR1 |= USART_CR1_RXNEIE; //enable incoming transmission interrupt
+			HAL_UART_Transmit_IT(&huart2,errorframe,8);//SEND ACK
 			truth = 3;
 			Display_char(truth);
 			//also setup mutex on TCS_input_data
@@ -294,6 +308,10 @@ TIM9->CR1 |= TIM_CR1_CEN;
 	//Run DMA
 	DMA1_Stream5->CR |= DMA_SxCR_EN;
 	//The workaround is complete!
+
+	HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(USART2_IRQn);
+	USART2->CR1 |= USART_CR1_RXNEIE;
 
 	/*
 	 * TEST OF DMA MEM TO MEM CONFIG FOR CRC CALCULATION
