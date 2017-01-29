@@ -169,6 +169,7 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc,(uint32_t *)ADC_read,4);
   //HAL_ADC_Start(&hadc);
 
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */

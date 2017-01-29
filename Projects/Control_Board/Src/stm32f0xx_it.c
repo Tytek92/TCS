@@ -46,6 +46,8 @@ extern volatile uint8_t TransmissionError;
 
 extern uint8_t timeout_counter;
 extern volatile uint8_t timeout_event;
+
+extern uint8_t comm_running;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -193,7 +195,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		}
 		else
 		{
-			if(0x40404040==InputFrame.word[0])//ERROR
+			if(0x42424242==InputFrame.word[0])//ERROR
 			{
 				Timeout_abort();//stop timeout timer
 				comm_running = 0;//set flag that the communication is complete

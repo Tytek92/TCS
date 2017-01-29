@@ -123,6 +123,14 @@ void MX_DMA_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+void DMA_Reset(void)
+{
+	DMA1_Stream5->CR &= ~DMA_SxCR_EN;
+	while(DMA1_Stream5->CR & DMA_SxCR_EN_Msk){}//while dma is active, wait
+	DMA1_Stream5 -> NDTR = 76;
+	DMA1 -> HIFCR |= DMA_HIFCR_CTCIF5;
+	DMA1_Stream5->CR |= DMA_SxCR_EN;
+}
 
 /* USER CODE END 2 */
 

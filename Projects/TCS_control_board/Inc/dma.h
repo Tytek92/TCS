@@ -71,6 +71,8 @@ void MX_DMA_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+void DMA_Reset(void);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

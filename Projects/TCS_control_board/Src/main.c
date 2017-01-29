@@ -59,6 +59,8 @@
 #include "My_code/crc.h"
 #include "My_code/timeout.h"
 
+#include "My_code/callbacks.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -90,6 +92,7 @@ volatile char Rx_whole_frame_buffer[SERIAL_BUF_SIZE_Uint8t];
 uint8_t serial_buffer_counter =0;
 //
 char errorframe[8] = {0x41,0x41,0x41,0x41,0x41,0x41,0x41,0x41};
+char errorframe2[8] = {0x42,0x42,0x42,0x42,0x42,0x42,0x42,0x42};
 
 extern volatile uint8_t TimeoutEventFlag;
 /* USER CODE END PV */
@@ -105,128 +108,7 @@ void MX_FREERTOS_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-/*
- * This function is called when FrameBuffer2[20] is full
- */
-void TransferComplete()
-{
-	/*
-	 * Here instruct DMA to calculate CRC, check it with what was received.
-	 * Do that by setting a mutex/semaphore to let task execute. Task will wait for second DMA callback [TODO] to proceed
-	 * If CRC matches proceed with filling proper structure [#########] fields with data from the frame
-	 * does that in turns with void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) located in stm32f4xx_it.c
-	 */
-	//check if this function executes quickly enough, otherwise try doing this using registers!
-	FrameBufferIndicator = 2;
-	//reset CRC so it is 0xFFFFFFFF
-	CRC->CR |= CRC_CR_RESET;
-	//Start transfer to calculate CRC
-	HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0,(uint32_t)FrameBuffer2.word,(uint32_t)&CRC->DR,19);
-}
 
-/*
- * This function is called when DMA finishes transfering data from FrameBuffer/FrameBuffer2 to CRC data register
- */
-void DMA_CRC_COMPLETE_Callback()
-{
-	HAL_StatusTypeDef status;
-	SEG_A_REG = 0;
-	SEG_B_REG = 0;
-	SEG_C_REG = 0;
-	SEG_D_REG = 0;
-	SEG_E_REG = 0;
-	SEG_F_REG = 0;
-	SEG_G_REG = 0;
-	//Display_char(FrameBufferIndicator);
-	//Check the CRC value
-	uint32_t dummy = FrameBuffer.word[0];
-	uint32_t dummy2 = FrameBuffer2.word[0];
-	if(FrameBufferIndicator == 2)
-	{
-		if(0==CRC->DR)//CRC is correct!
-		{
-			Timeout_abort(); //stop the timeout timer
-			USART2->CR1 |= USART_CR1_RXNEIE; //enable incoming transmission interrupt
-			HAL_UART_Transmit_IT(&huart2,errorframe,8);//SEND ACK
-			truth = 1;
-			Display_char(truth);
-			//also setup mutex on TCS_input_data
-			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer2.word,(uint32_t)TCS_input_data.Concatenated_Fields,18);
-		}
-		else
-		{	//CRC is not correct
-			//check if DMA_SxNDTR is equal to 76 (no orpahned bytes)
-			if(76 != DMA1_Stream5 -> NDTR)
-			{
-				//something went wrong! Clean up mess
-			}
-			HAL_UART_Transmit(&huart2,errorframe,8,5000);
-			HAL_Delay(8);
-			int i = 0;
-			truth = 2;
-			Display_char(truth);
-			USART2 -> CR3 &= ~USART_CR3_DMAR;
-			USART2 -> CR1 &= ~USART_CR1_UE;
-			DMA1_Stream5->CR &= ~DMA_SxCR_EN;
-			while(!DMA1_Stream5->CR){}
-			DMA1_Stream5 -> NDTR = 76;
-			DMA1 -> HIFCR |= DMA_HIFCR_CTCIF5;
-
-			USART2->SR &= ~USART_SR_TC;
-
-			for(i=0; i<2000; i++)
-			{
-				asm("nop");
-			}
-			DMA1_Stream5->CR |= DMA_SxCR_EN;
-			USART2 -> CR3 |= USART_CR3_DMAR;
-			USART2 -> CR1 |= USART_CR1_UE;
-		}
-	}
-	else
-	{
-		if(0==CRC->DR)
-		{
-			Timeout_abort(); //stop the timeout timer
-			USART2->CR1 |= USART_CR1_RXNEIE; //enable incoming transmission interrupt
-			HAL_UART_Transmit_IT(&huart2,errorframe,8);//SEND ACK
-			truth = 3;
-			Display_char(truth);
-			//also setup mutex on TCS_input_data
-			HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream1,(uint32_t)FrameBuffer.word,(uint32_t)TCS_input_data.Concatenated_Fields,18);
-		}
-		else
-		{
-			HAL_UART_Transmit(&huart2,errorframe,8,5000);
-			HAL_Delay(8);
-			int i = 0;
-			truth = 4;
-			Display_char(truth);
-			USART2 -> CR3 &= ~USART_CR3_DMAR;
-			USART2 -> CR1 &= ~USART_CR1_UE;
-			DMA1_Stream5->CR &= ~DMA_SxCR_EN;
-			while(!DMA1_Stream5){}
-			DMA1_Stream5 -> NDTR = 76;
-			DMA1 -> HIFCR |= DMA_HIFCR_CTCIF5;
-
-			USART2->SR &= ~USART_SR_TC;
-
-			for(i=0; i<2000; i++)
-			{
-				asm("nop");
-			}
-			DMA1_Stream5->CR |= DMA_SxCR_EN;
-			USART2 -> CR3 |= USART_CR3_DMAR;
-			USART2 -> CR1 |= USART_CR1_UE;
-
-		}
-	}
-}
-
-void HOST_COMMAND_COMPLETE_Callback()
-{
-	//here free mutexes off TCS_input_data
-}
 
 
 /* USER CODE END 0 */
@@ -265,7 +147,7 @@ int main(void)
    */
   //run my config for timeout timer
   Timeout_TIM9_Init();
-TIM9->CR1 |= TIM_CR1_CEN;
+//TIM9->CR1 |= TIM_CR1_CEN;
 
 	/*
 	 * Short description:
@@ -323,7 +205,7 @@ TIM9->CR1 |= TIM_CR1_CEN;
 	/*
 	 * DMA FRAME TO SETTINGS AND SET VALUE struct/union
 	 */
-	TIM9->CR1 |= TIM_CR1_CEN;
+	//TIM9->CR1 |= TIM_CR1_CEN;
 
 	/*
 	 * Test of CRC module

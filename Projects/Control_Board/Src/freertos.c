@@ -48,6 +48,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "gpio.h"
+#include "usart.h"
 
 /* USER CODE END Includes */
 
@@ -66,6 +67,8 @@ union FrameBuffer{
 	char byte[76];
 	uint32_t word[19];
 };
+
+extern volatile uint16_t ADC_read[];
 
 /* USER CODE END Variables */
 
@@ -124,12 +127,14 @@ void StartMainTask(void const * argument)
 	{
 		if(0 == Run_communication)// if transmission is launched, ignore the button
 		{
-			if(0 == HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5))// wait for button press to launch transmission
+			if(0 == HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))// wait for button press to launch transmission
 			{
 				button_loop_counter++;
 				if(button_loop_counter >= 170)
 				{
 					Run_communication = 1;
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_RESET);
+					timeout_counter=0;
 				}
 			}
 			else
@@ -141,9 +146,21 @@ void StartMainTask(void const * argument)
 		{
 			if(0 == comm_running) //if there is no ongoing transmission or timeout was reached, send next frame
 			{
-				HAL_UART_Transmit_IT(&huart2,FrameBuffer.word,76,5000); //transmit frame with CRC
+				FrameBuffer.byte[0] = ADC_read[0];
+				FrameBuffer.byte[1] = ADC_read[1];
+				FrameBuffer.byte[2] = ADC_read[2];
+				FrameBuffer.byte[3] = ADC_read[3];
+				  CRC->CR |= CRC_CR_RESET;
+				  for(uint8_t i=0; i<18; i++)
+				  {
+					  CRC->DR = FrameBuffer.word[i];
+				  }
+				  uint32_t crc = CRC->DR;
+				  FrameBuffer.word[18]=crc;
+				HAL_UART_Transmit_IT(&huart2,FrameBuffer.word,76); //transmit frame with CRC
 				Timeout_start(); //start transmission timeout
 				comm_running = 1; //indicate that transmission routine is running
+				osDelay(40);
 			}
 			else
 			{
@@ -155,12 +172,15 @@ void StartMainTask(void const * argument)
 						comm_running = 0;
 						Run_communication = 0; //enable launching transmission using user button
 						timeout_event = 0; //reset the event flag
+						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5,GPIO_PIN_SET);
+
 					}
 					else
 					{
 						//this is simple timeout with no ACK or ERR
 						//send another frame
 						timeout_event = 0; //reset the event flag
+						comm_running = 0;
 					}
 				}
 			}

@@ -45,6 +45,12 @@ extern volatile uint32_t FrameBuffer[];
 extern volatile uint8_t FrameBufferIndicator;
 extern volatile uint8_t TimeoutEventFlag;
 
+extern volatile uint8_t TimeoutMode;
+extern volatile uint8_t TimeoutMessage;
+
+extern char errorframe[];
+extern char errorframe2[];
+
 char a = '0';
 char b = '0';
 char c = '0';
@@ -218,6 +224,41 @@ void TIM1_BRK_TIM9_IRQHandler(void)
   {
 	  uint32_t dummy = 111;
 	  TIM9->SR &= ~TIM_SR_UIF;//reset interrupt flag
+	  if(RESP_MODE == TimeoutMode)
+	  {
+		  if(ACK == TimeoutMessage)
+		  {
+			  //Send ACK once again
+			  HAL_UART_Transmit_IT(&huart2,errorframe,8);//SEND ACK
+			  Timeout_start(RESP_MODE, ACK);//Start the timeout timer with response mode
+		  }
+		  else if(ERR == TimeoutMessage)//Means we had to send ERR
+		  {
+			  //Send ERR once again
+			  HAL_UART_Transmit_IT(&huart2,errorframe2,8);
+			  Timeout_start(RESP_MODE, ERR);//Start the timeout timer with response mode
+		  }
+	  }
+	  else if(RECV_MODE == TimeoutMode)//RECV MODE
+	  {
+		  if(ERR == TimeoutMessage)
+		  {
+			  //Send ERR
+			  HAL_UART_Transmit_IT(&huart2,errorframe2,8);
+			  USART2->CR1 |= USART_CR1_RXNEIE; //enable incoming transmission interrupt
+			  if(76 != DMA1_Stream5 -> NDTR)
+			  {
+				  //something went wrong! Clean up mess
+				  DMA_Reset();
+			  }
+			  Timeout_start(RESP_MODE, ERR);//Start the timeout timer with response mode
+		  }
+		  else if(NONE == TimeoutMessage)
+		  {
+
+		  }
+	  }
+
   }
 
   /* USER CODE END TIM1_BRK_TIM9_IRQn 1 */
@@ -245,9 +286,18 @@ void USART2_IRQHandler(void)
 {
 	/* USER CODE BEGIN USART2_IRQn 0 */
 	//disable receive interrupt (not needed during whole transfer)
-	USART2->CR1 &= ~USART_CR1_RXNEIE;
-	//Start timeout timer
-	Timeout_start();
+	if(USART2->CR1 & USART_CR1_RXNEIE_Msk)
+	{
+		USART2->CR1 &= ~USART_CR1_RXNEIE;
+		//Stop pending timeout timer if timer is running
+		if(TIM9->CR1 & TIM_CR1_CEN_Msk)
+		{
+			Timeout_abort();
+		}
+		//Start timeout timer
+		Timeout_start(RECV_MODE, ERR);
+		//TIM9->SR &= ~TIM_SR_UIF;//reset interrupt flag
+	}
 	/* USER CODE END USART2_IRQn 0 */
 	HAL_UART_IRQHandler(&huart2);
 	/* USER CODE BEGIN USART2_IRQn 1 */
