@@ -53,6 +53,7 @@
 /* Variables -----------------------------------------------------------------*/
 osThreadId Display_TaskHandle;
 osThreadId Dummy_display_uHandle;
+osThreadId PIDloop_TaskHandle;
 osMutexId Disp_BCD_StateHandle;
 
 /* USER CODE BEGIN Variables */
@@ -64,6 +65,7 @@ extern volatile union TCS_input_data TCS_input_data;
 /* Function prototypes -------------------------------------------------------*/
 void StartDisplay_Task(void const * argument);
 void StartDummy_display_update(void const * argument);
+void Start_PIDloop_Task(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -106,6 +108,10 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(Dummy_display_u, StartDummy_display_update, osPriorityIdle, 0, 128);
   Dummy_display_uHandle = osThreadCreate(osThread(Dummy_display_u), NULL);
 
+  /* definition and creation of PIDloop_Task */
+  osThreadDef(PIDloop_Task, Start_PIDloop_Task, osPriorityAboveNormal, 0, 128);
+  PIDloop_TaskHandle = osThreadCreate(osThread(PIDloop_Task), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -141,6 +147,20 @@ void StartDummy_display_update(void const * argument)
     osDelay(1);
   }
   /* USER CODE END StartDummy_display_update */
+}
+
+/* Start_PIDloop_Task function */
+void Start_PIDloop_Task(void const * argument)
+{
+  /* USER CODE BEGIN Start_PIDloop_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+	  PID_loop_right_wh();
+	  PID_loop_left_wh();
+	  osDelay(10);//100Hz
+  }
+  /* USER CODE END Start_PIDloop_Task */
 }
 
 /* USER CODE BEGIN Application */

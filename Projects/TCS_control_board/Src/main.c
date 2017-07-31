@@ -140,6 +140,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CRC_Init();
   MX_TIM2_Init();
+  MX_TIM9_Init();
+  MX_TIM5_Init();
 
   /* USER CODE BEGIN 2 */
   /*
@@ -244,6 +246,11 @@ int main(void)
 //	uint32_t blah = ~result;
 //	uint32_t blah2 = blah ^ 0xFFFFFFFF;
 	// CRC TEST PASSED!
+	/*
+	 * START TIMERS FOR PWM
+	 */
+	//HAL_TIM_Base_Start_IT(&htim9); //?? check
+	HAL_TIM_Base_Start_IT(&htim5);
 
   /* USER CODE END 2 */
 

@@ -14,6 +14,17 @@
  * Tasks accessing this structure:
  * 									* Display_Task
  */
+
+struct System_State {
+	int16_t AngularVelocityRearRightWh;
+	int16_t AngularVelocityRearLeftWh;
+	int16_t TargetAngularVelocityRearRightWh;
+	int16_t TargetAngularVelocityRearLeftWh;
+	int16_t SystemLinearVelocity; // meters per second
+	int16_t CurrentDrawRightWh;
+	int16_t CurrentDrawLeftWh;
+}System_State;
+
 struct Disp_BCD_Data {
     uint8_t blink_status;
     uint8_t blink_frequency;
@@ -50,6 +61,8 @@ union FrameBuffer{
 	char byte[76];
 	uint32_t word[19];
 };
+
+
 
 
 /*

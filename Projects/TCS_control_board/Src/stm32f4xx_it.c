@@ -61,12 +61,24 @@ char f = '0';
 
 uint8_t counter=0;
 
+
+/*
+ * TIM5 PWM duty changing, new value memory
+ */
+
+int OldDutyRightWh = 0;
+int PwmDutyStepRightWh = 0;
+int OldDutyLeftWh = 0;
+int PwmDutyStepLeftWh = 0;
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim5;
+extern TIM_HandleTypeDef htim9;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern UART_HandleTypeDef huart2;
 
@@ -219,6 +231,7 @@ void TIM1_BRK_TIM9_IRQHandler(void)
 
   /* USER CODE END TIM1_BRK_TIM9_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
+  HAL_TIM_IRQHandler(&htim9);
   /* USER CODE BEGIN TIM1_BRK_TIM9_IRQn 1 */
   if(TIM9->SR & TIM_SR_UIF_Msk)
   {
@@ -284,7 +297,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 */
 void USART2_IRQHandler(void)
 {
-	/* USER CODE BEGIN USART2_IRQn 0 */
+  /* USER CODE BEGIN USART2_IRQn 0 */
 	//disable receive interrupt (not needed during whole transfer)
 	if(USART2->CR1 & USART_CR1_RXNEIE_Msk)
 	{
@@ -298,11 +311,39 @@ void USART2_IRQHandler(void)
 		Timeout_start(RECV_MODE, ERR);
 		//TIM9->SR &= ~TIM_SR_UIF;//reset interrupt flag
 	}
-	/* USER CODE END USART2_IRQn 0 */
-	HAL_UART_IRQHandler(&huart2);
-	/* USER CODE BEGIN USART2_IRQn 1 */
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
 
-	/* USER CODE END USART2_IRQn 1 */
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM5 global interrupt.
+*/
+void TIM5_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM5_IRQn 0 */
+	//TODO smooth PWM change for motors
+	//target pwm right: System_State.TargetAngularVelocityRearRightWh
+	//current pwm right: TIM1->CCR1
+	if(OldDutyRightWh==System_State.TargetAngularVelocityRearRightWh)
+	{
+
+	}
+	else
+	{
+		OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
+		PwmDutyStepRightWh = ((&TIM1->CCR1)-OldDutyRightWh)/65535;
+	}
+
+
+
+  /* USER CODE END TIM5_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim5);
+  /* USER CODE BEGIN TIM5_IRQn 1 */
+
+  /* USER CODE END TIM5_IRQn 1 */
 }
 
 /**
