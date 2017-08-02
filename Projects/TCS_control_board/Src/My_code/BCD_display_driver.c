@@ -52,7 +52,7 @@ void Display_char(uint8_t char_number)
  *
  * Common cathode - low level (reset) switches segment ON
  */
-
+/*
 void Disp_0_()
 {
 	A_7SEG_GPIO_Port->BSRR = (uint32_t)A_7SEG_Pin<<16;
@@ -184,3 +184,4 @@ void Disp_r_()
 	E_7SEG_GPIO_Port->BSRR = (uint32_t)E_7SEG_Pin<<16;
 	G_7SEG_GPIO_Port->BSRR = (uint32_t)G_7SEG_Pin<<16;
 }
+*/
