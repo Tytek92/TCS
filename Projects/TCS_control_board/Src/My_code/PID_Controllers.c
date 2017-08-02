@@ -107,6 +107,7 @@ uint16_t PID_loop_left_wh()
  */
 void adjust_PWM_right_wh(int PWM_Duty)
 {
+	System_State.TargetAngularVelocityRearRightWh=PWM_Duty;
 	RightWhChangedDuty=1;
 
 }

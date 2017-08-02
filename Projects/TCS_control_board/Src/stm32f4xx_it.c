@@ -39,6 +39,7 @@
 /* USER CODE BEGIN 0 */
 #include "My_code/crc.h"
 #include "My_code/timeout.h"
+#include "Basic_global_structures/global_structures.h"
 extern uint8_t serial_buffer_counter;
 
 extern volatile uint32_t FrameBuffer[];
@@ -335,11 +336,11 @@ void TIM5_IRQHandler(void)
 		//if target duty cycle was not changed then execute smooth pwm change
 		if(OldDutyRightWh==System_State.TargetAngularVelocityRearRightWh)
 		{
-			if(((&TIM1->CCR1)-OldDutyRightWh)>100)//if difference is big enough do steps of incrementation
+			if(((TIM1->CCR1)-OldDutyRightWh)>PwmDutyStepRightWh)//if difference is big enough do steps of incrementation
 			{
-				TIM1->CCR1 = (&TIM1->CCR1)+PwmDutyStepRightWh;
+				TIM1->CCR1 = (TIM1->CCR1)+PwmDutyStepRightWh;
 			}
-			else if((&TIM1->CCR1 != OldDutyRightWh))//difference is less than 100, set register to proper value
+			else if((TIM1->CCR1 != OldDutyRightWh))//difference is less than 100, set register to proper value
 			{
 				TIM1->CCR1 = OldDutyRightWh;
 				RightWhChangedDuty = 0;
@@ -348,7 +349,9 @@ void TIM5_IRQHandler(void)
 		else
 		{
 			OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
-			PwmDutyStepRightWh = (((&TIM1->CCR1)-OldDutyRightWh)*100)/65535;
+			int dummy = (OldDutyRightWh-TIM1->CCR1)*100;
+			PwmDutyStepRightWh = dummy/65535;
+			//PwmDutyStepRightWh = ((TIM1->CCR1-OldDutyRightWh)*100)/65535;
 		}
 	}
 	if(1 == LeftWhChangedDuty)
@@ -356,11 +359,11 @@ void TIM5_IRQHandler(void)
 		//if target duty cycle was not changed then execute smooth pwm change
 		if(OldDutyLeftWh==System_State.TargetAngularVelocityRearLeftWh)
 		{
-			if(((&TIM1->CCR3)-OldDutyLeftWh)>100)//if difference is big enough do steps of incrementation
+			if(((TIM1->CCR3)-OldDutyLeftWh)>100)//if difference is big enough do steps of incrementation
 			{
-				TIM1->CCR3 = (&TIM1->CCR3)+PwmDutyStepLeftWh;
+				TIM1->CCR3 = (TIM1->CCR3)+PwmDutyStepLeftWh;
 			}
-			else if((&TIM1->CCR3 != OldDutyLeftWh))//difference is less than 100, set register to proper value
+			else if((TIM1->CCR3 != OldDutyLeftWh))//difference is less than 100, set register to proper value
 			{
 				TIM1->CCR3 = OldDutyLeftWh;
 				LeftWhChangedDuty = 0;
@@ -369,7 +372,7 @@ void TIM5_IRQHandler(void)
 		else
 		{
 			OldDutyLeftWh=System_State.TargetAngularVelocityRearLeftWh;
-			PwmDutyStepLeftWh = (((&TIM1->CCR3)-OldDutyLeftWh)*100)/65535;
+			PwmDutyStepLeftWh = ((TIM1->CCR3-OldDutyLeftWh)*100)/65535;
 		}
 	}
 
