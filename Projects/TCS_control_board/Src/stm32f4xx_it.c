@@ -71,6 +71,9 @@ int PwmDutyStepRightWh = 0;
 int OldDutyLeftWh = 0;
 int PwmDutyStepLeftWh = 0;
 
+uint8_t RightWhChangedDuty = 0;
+uint8_t LeftWhChangedDuty = 0;
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -327,14 +330,47 @@ void TIM5_IRQHandler(void)
 	//TODO smooth PWM change for motors
 	//target pwm right: System_State.TargetAngularVelocityRearRightWh
 	//current pwm right: TIM1->CCR1
-	if(OldDutyRightWh==System_State.TargetAngularVelocityRearRightWh)
+	if(1 == RightWhChangedDuty)
 	{
-
+		//if target duty cycle was not changed then execute smooth pwm change
+		if(OldDutyRightWh==System_State.TargetAngularVelocityRearRightWh)
+		{
+			if(((&TIM1->CCR1)-OldDutyRightWh)>100)//if difference is big enough do steps of incrementation
+			{
+				TIM1->CCR1 = (&TIM1->CCR1)+PwmDutyStepRightWh;
+			}
+			else if((&TIM1->CCR1 != OldDutyRightWh))//difference is less than 100, set register to proper value
+			{
+				TIM1->CCR1 = OldDutyRightWh;
+				RightWhChangedDuty = 0;
+			}
+		}
+		else
+		{
+			OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
+			PwmDutyStepRightWh = (((&TIM1->CCR1)-OldDutyRightWh)*100)/65535;
+		}
 	}
-	else
+	if(1 == LeftWhChangedDuty)
 	{
-		OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
-		PwmDutyStepRightWh = ((&TIM1->CCR1)-OldDutyRightWh)/65535;
+		//if target duty cycle was not changed then execute smooth pwm change
+		if(OldDutyLeftWh==System_State.TargetAngularVelocityRearLeftWh)
+		{
+			if(((&TIM1->CCR3)-OldDutyLeftWh)>100)//if difference is big enough do steps of incrementation
+			{
+				TIM1->CCR3 = (&TIM1->CCR3)+PwmDutyStepLeftWh;
+			}
+			else if((&TIM1->CCR3 != OldDutyLeftWh))//difference is less than 100, set register to proper value
+			{
+				TIM1->CCR3 = OldDutyLeftWh;
+				LeftWhChangedDuty = 0;
+			}
+		}
+		else
+		{
+			OldDutyLeftWh=System_State.TargetAngularVelocityRearLeftWh;
+			PwmDutyStepLeftWh = (((&TIM1->CCR3)-OldDutyLeftWh)*100)/65535;
+		}
 	}
 
 

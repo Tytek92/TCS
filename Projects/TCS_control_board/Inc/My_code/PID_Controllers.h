@@ -14,6 +14,9 @@
 
 #include "Basic_global_structures/global_structures.h"
 
+extern uint8_t RightWhChangedDuty;
+extern uint8_t LeftWhChangedDuty;
+
 /*
  * PID controller settings
  * Right rear wheel

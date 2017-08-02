@@ -107,6 +107,7 @@ uint16_t PID_loop_left_wh()
  */
 void adjust_PWM_right_wh(int PWM_Duty)
 {
+	RightWhChangedDuty=1;
 
 }
 /*
@@ -114,7 +115,7 @@ void adjust_PWM_right_wh(int PWM_Duty)
  */
 void adjust_PWM_left_wh(int PWM_Duty)
 {
-
+	LeftWhChangedDuty=1;
 }
 
 
