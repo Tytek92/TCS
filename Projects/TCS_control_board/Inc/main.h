@@ -65,6 +65,8 @@
 #define ADC_R_GPIO_Port GPIOC
 #define ADC_L_Pin GPIO_PIN_1
 #define ADC_L_GPIO_Port GPIOB
+#define Dummy_output_Pin GPIO_PIN_12
+#define Dummy_output_GPIO_Port GPIOB
 #define D2R_Pin GPIO_PIN_9
 #define D2R_GPIO_Port GPIOC
 #define D1R_Pin GPIO_PIN_9

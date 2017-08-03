@@ -144,8 +144,8 @@ void StartDummy_display_update(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(2000);
-    adjust_PWM_right_wh(10000);
+    osDelay(1000);
+    //adjust_PWM_right_wh(500);
   }
   /* USER CODE END StartDummy_display_update */
 }
@@ -159,7 +159,7 @@ void Start_PIDloop_Task(void const * argument)
   {
 	  //PID_loop_right_wh();
 	  //PID_loop_left_wh();
-	  adjust_PWM_right_wh(5000);
+	  //adjust_PWM_right_wh(6500);
 	  osDelay(1000);//100Hz
   }
   /* USER CODE END Start_PIDloop_Task */

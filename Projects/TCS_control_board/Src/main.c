@@ -95,6 +95,9 @@ char errorframe[8] = {0x41,0x41,0x41,0x41,0x41,0x41,0x41,0x41};
 char errorframe2[8] = {0x42,0x42,0x42,0x42,0x42,0x42,0x42,0x42};
 
 extern volatile uint8_t TimeoutEventFlag;
+
+extern uint8_t RightWhChangedDuty;
+extern uint8_t LeftWhChangedDuty;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -250,7 +253,10 @@ int main(void)
 	 * START TIMERS FOR PWM
 	 */
 	//HAL_TIM_Base_Start_IT(&htim9); //?? check
+	RightWhChangedDuty = 1;
+	System_State.TargetAngularVelocityRearRightWh=6300;
 	HAL_TIM_Base_Start_IT(&htim5);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
   /* USER CODE END 2 */
 

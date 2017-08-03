@@ -331,6 +331,9 @@ void TIM5_IRQHandler(void)
 	//TODO smooth PWM change for motors
 	//target pwm right: System_State.TargetAngularVelocityRearRightWh
 	//current pwm right: TIM1->CCR1
+	//HAL_GPIO_TogglePin(Dummy_output_GPIO_Port, Dummy_output_Pin);
+	Dummy_output_GPIO_Port->ODR ^= Dummy_output_Pin;
+
 	if(1 == RightWhChangedDuty)
 	{
 		//if target duty cycle was not changed then execute smooth pwm change
@@ -343,14 +346,15 @@ void TIM5_IRQHandler(void)
 			else if((TIM1->CCR1 != OldDutyRightWh))//difference is less than 100, set register to proper value
 			{
 				TIM1->CCR1 = OldDutyRightWh;
-				RightWhChangedDuty = 0;
+				RightWhChangedDuty = 1;//should be 0
+				System_State.TargetAngularVelocityRearRightWh=200;
 			}
 		}
 		else
 		{
 			OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
 			int dummy = (OldDutyRightWh-TIM1->CCR1)*100;
-			PwmDutyStepRightWh = dummy/65535;
+			PwmDutyStepRightWh = dummy/6400;
 			//PwmDutyStepRightWh = ((TIM1->CCR1-OldDutyRightWh)*100)/65535;
 		}
 	}
@@ -374,6 +378,7 @@ void TIM5_IRQHandler(void)
 			OldDutyLeftWh=System_State.TargetAngularVelocityRearLeftWh;
 			PwmDutyStepLeftWh = ((TIM1->CCR3-OldDutyLeftWh)*100)/65535;
 		}
+
 	}
 
 
