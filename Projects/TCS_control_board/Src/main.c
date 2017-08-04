@@ -254,9 +254,10 @@ int main(void)
 	 */
 	//HAL_TIM_Base_Start_IT(&htim9); //?? check
 	RightWhChangedDuty = 1;
-	System_State.TargetAngularVelocityRearRightWh=6300;
-	HAL_TIM_Base_Start_IT(&htim5);
+	System_State.TargetAngularVelocityRearRightWh=12800;
+	//TIM1->CCR1 = 6400;
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	HAL_TIM_Base_Start_IT(&htim5);
 
   /* USER CODE END 2 */
 

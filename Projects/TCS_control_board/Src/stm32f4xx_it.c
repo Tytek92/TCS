@@ -347,14 +347,18 @@ void TIM5_IRQHandler(void)
 			{
 				TIM1->CCR1 = OldDutyRightWh;
 				RightWhChangedDuty = 1;//should be 0
-				System_State.TargetAngularVelocityRearRightWh=200;
+				System_State.TargetAngularVelocityRearRightWh=0;
 			}
+			if(TIM1->CCR1 == 12800)
+				System_State.TargetAngularVelocityRearRightWh = 0;
+			if(TIM1->CCR1 == 0)
+				System_State.TargetAngularVelocityRearRightWh = 12800;
 		}
 		else
 		{
 			OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
 			int dummy = (OldDutyRightWh-TIM1->CCR1)*100;
-			PwmDutyStepRightWh = dummy/6400;
+			PwmDutyStepRightWh = dummy/12800;
 			//PwmDutyStepRightWh = ((TIM1->CCR1-OldDutyRightWh)*100)/65535;
 		}
 	}
