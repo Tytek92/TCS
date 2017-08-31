@@ -75,12 +75,15 @@ int PwmDutyStepLeftWh = 0;
 uint8_t RightWhChangedDuty = 0;
 uint8_t LeftWhChangedDuty = 0;
 
+uint32_t rev_counter_rwh = 0;
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim9;
 extern DMA_HandleTypeDef hdma_usart2_rx;
@@ -297,6 +300,24 @@ void TIM1_UP_TIM10_IRQHandler(void)
 }
 
 /**
+* @brief This function handles TIM3 global interrupt.
+*/
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+	if(TIM3->SR & TIM_SR_UIF_Msk)
+	{
+		rev_counter_rwh++;
+	}
+
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
 * @brief This function handles USART2 global interrupt.
 */
 void USART2_IRQHandler(void)
@@ -334,31 +355,60 @@ void TIM5_IRQHandler(void)
 	//HAL_GPIO_TogglePin(Dummy_output_GPIO_Port, Dummy_output_Pin);
 	Dummy_output_GPIO_Port->ODR ^= Dummy_output_Pin;
 
+	static uint8_t step_down_rightwh = 0;
+
 	if(1 == RightWhChangedDuty)
 	{
 		//if target duty cycle was not changed then execute smooth pwm change
 		if(OldDutyRightWh==System_State.TargetAngularVelocityRearRightWh)
 		{
-			if(((TIM1->CCR1)-OldDutyRightWh)>PwmDutyStepRightWh)//if difference is big enough do steps of incrementation
+			uint32_t ppp = TIM1->CCR1;
+			if(step_down_rightwh == 0)//we are stepping up - OldDutyRightWh is > TIM1->CCR1
 			{
-				TIM1->CCR1 = (TIM1->CCR1)+PwmDutyStepRightWh;
+				if((OldDutyRightWh-(TIM1->CCR1))>PwmDutyStepRightWh)//if difference is big enough do steps of incrementation
+				{
+					TIM1->CCR1 = (TIM1->CCR1)+PwmDutyStepRightWh;
+				}
+				else if((TIM1->CCR1 != OldDutyRightWh))//difference is less than step size, set register to proper value
+				{
+					TIM1->CCR1 = OldDutyRightWh;
+					RightWhChangedDuty = 1;//should be 0
+					//System_State.TargetAngularVelocityRearRightWh=0;
+				}
 			}
-			else if((TIM1->CCR1 != OldDutyRightWh))//difference is less than 100, set register to proper value
+			else//we are stepping up - OldDutyRightWh is < TIM1->CCR1
 			{
-				TIM1->CCR1 = OldDutyRightWh;
-				RightWhChangedDuty = 1;//should be 0
-				System_State.TargetAngularVelocityRearRightWh=0;
+				if(((TIM1->CCR1)-OldDutyRightWh)>PwmDutyStepRightWh)//if difference is big enough do steps of incrementation
+				{
+					TIM1->CCR1 = (TIM1->CCR1)-PwmDutyStepRightWh;
+				}
+				else if((TIM1->CCR1 != OldDutyRightWh))//difference is less than step size, set register to proper value
+				{
+					TIM1->CCR1 = OldDutyRightWh;
+					RightWhChangedDuty = 1;//should be 0
+					//System_State.TargetAngularVelocityRearRightWh=0;
+				}
 			}
-			if(TIM1->CCR1 == 12800)
-				System_State.TargetAngularVelocityRearRightWh = 0;
-			if(TIM1->CCR1 == 0)
-				System_State.TargetAngularVelocityRearRightWh = 12800;
+			//if(TIM1->CCR1 == 12800)
+				//System_State.TargetAngularVelocityRearRightWh = 0;
+			//if(TIM1->CCR1 == 0)
+				//System_State.TargetAngularVelocityRearRightWh = 12800;
 		}
-		else
+		else//if it was changed calculate new step
 		{
 			OldDutyRightWh=System_State.TargetAngularVelocityRearRightWh;
-			int dummy = (OldDutyRightWh-TIM1->CCR1)*100;
+			int dummy = (OldDutyRightWh-TIM1->CCR1)*10000;
 			PwmDutyStepRightWh = dummy/12800;
+			if(PwmDutyStepRightWh < 0)
+			{
+				step_down_rightwh = 1;
+				PwmDutyStepRightWh *= -1;
+			}
+			else
+			{
+				step_down_rightwh = 0;
+			}
+
 			//PwmDutyStepRightWh = ((TIM1->CCR1-OldDutyRightWh)*100)/65535;
 		}
 	}
