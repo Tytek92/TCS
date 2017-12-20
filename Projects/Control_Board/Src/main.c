@@ -51,16 +51,31 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+//LCD display library
+#include "My_code/tm_stm32_hd44780.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+//frame buffer for USART DMA
 union FrameBuffer{
 	char byte[76];
 	uint32_t word[19];
+};
+
+//Custom Caracter for LCD display
+uint8_t customChar[] = {
+	0x1F,	/*  xxx 11111 */
+	0x11,	/*  xxx 10001 */
+	0x11,	/*  xxx 10001 */
+	0x11,	/*  xxx 10001 */
+	0x11,	/*  xxx 10001 */
+	0x11,	/*  xxx 10001 */
+	0x11,	/*  xxx 10001 */
+	0x1F	/*  xxx 11111 */
 };
 
 
@@ -74,7 +89,15 @@ volatile uint8_t TransmissionError = 0;
 
 extern ADC_HandleTypeDef hadc;
 
-volatile uint16_t ADC_read[4] = {0};
+//volatile uint16_t ADC_read[4] = {0};
+
+volatile union ADC_read{
+	struct Axis{
+		uint16_t X_axis;
+		uint16_t Y_axis;
+	}Axis;
+	uint16_t XY_Axis[2];
+};
 
 uint8_t Run_communication = 0;
 uint8_t comm_running = 0;
@@ -90,6 +113,7 @@ void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+void HD44780_Init(void);
 
 /* USER CODE END PFP */
 
@@ -102,6 +126,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	union ADC_read XY_Axis;
 
   /* USER CODE END 1 */
 
@@ -165,9 +190,12 @@ int main(void)
   uint8_t counter = 0;
   uint8_t message_counter = 0;
 
- // HAL_ADC_Start_IT
-  HAL_ADC_Start_DMA(&hadc,(uint32_t *)ADC_read,4);
+ // HAL_ADC_Start_IT for two ADC channels
+  HAL_ADC_Start_DMA(&hadc,(uint32_t *)XY_Axis.XY_Axis,2);
   //HAL_ADC_Start(&hadc);
+
+
+  HD44780_Init();
 
 
   /* USER CODE END 2 */
@@ -184,14 +212,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay(200);
-	  uint16_t dummy[4];
-	  dummy[0]=ADC_read[0];
-	  dummy[1]=ADC_read[1];
-	  dummy[2]=ADC_read[2];
-	  dummy[3]=ADC_read[3];
-	  HAL_Delay(400);
-	  HAL_UART_Transmit(&huart2,dummy,8,5000);
+	 // HAL_Delay(200);
+	  //uint16_t dummy[4];
+	  //dummy[0]=ADC_read[0];
+	  //dummy[1]=ADC_read[1];
+	  //dummy[2]=ADC_read[2];
+	  //dummy[3]=ADC_read[3];
+	  //HAL_Delay(400);
+	  //HAL_UART_Transmit(&huart2,dummy,8,5000);
 	 // char end[2] = {'\r','\n'};
 	  //HAL_UART_Transmit(&huart2,end,2,5000);
   /* USER CODE END WHILE */
@@ -301,6 +329,40 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HD44780_Init(void)
+{
+	TM_HD44780_Init(20, 4);
+
+		/* Save custom character on location 0 in LCD */
+		TM_HD44780_CreateChar(0, customChar);
+
+		/* Put string to LCD */
+		TM_HD44780_Puts(0, 0, "STM32F4/7-Disco/Eval");
+		TM_HD44780_Puts(2, 1, "20x4 HD44780 LCD");
+		TM_HD44780_Puts(0, 2, "stm32f4-\n\r       discovery.com");
+
+		/* Wait a little */
+		//Delayms(3000);
+
+		/* Clear LCD */
+		TM_HD44780_Clear();
+
+		/* Show cursor */
+		TM_HD44780_CursorOn();
+
+		/* Write new text */
+		TM_HD44780_Puts(6, 2, "CLEARED!");
+
+		/* Wait a little */
+		//Delayms(1000);
+
+		/* Enable cursor blinking */
+		TM_HD44780_BlinkOn();
+
+		/* Show custom character at x = 1, y = 2 from RAM location 0 */
+		//TM_HD44780_PutCustom(1, 2, 0);
+}
 
 /* USER CODE END 4 */
 
