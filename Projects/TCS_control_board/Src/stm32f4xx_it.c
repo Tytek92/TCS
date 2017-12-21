@@ -77,6 +77,10 @@ uint8_t LeftWhChangedDuty = 0;
 
 uint32_t rev_counter_rwh = 0;
 
+
+//TIM5 (200us) prescaler to 2ms
+uint8_t TIM5_presc_velocity_measurment = 0;
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -349,6 +353,20 @@ void USART2_IRQHandler(void)
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
+	/*
+	 * 200us time interval
+	 */
+
+	//Part where angular velocity is measured.
+	if(5 <= TIM5_presc_velocity_measurment)
+	{
+		//perform measurment on both wheels
+		TIM5_presc_velocity_measurment=0;
+	}
+	else //start new prescaler period
+		TIM5_presc_velocity_measurment++;
+	//end of angular velocity measurment
+
 	//TODO smooth PWM change for motors
 	//target pwm right: System_State.TargetAngularVelocityRearRightWh
 	//current pwm right: TIM1->CCR1
