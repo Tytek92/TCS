@@ -299,6 +299,16 @@ void TIM1_UP_TIM10_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim1);
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
+  /*
+   * TODO: Counting funtion of angular velocity based on TIM5 and TIM3 CNT values
+   * USE CCxIF bit in TIMx_SR
+   * CCxIE in TIMx_DIER
+   */
+  if(TIM1->SR & TIM_SR_CC3IF_Msk)//interrupt came from Channel 3 of TIM1 - timebase for angular velocity
+  {
+	  //do something - call a function?
+	  TIM1->DIER |= TIM_DIER_CC3IE;//enables interrupt on output compare channel 3
+  }
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }

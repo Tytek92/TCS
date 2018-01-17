@@ -252,15 +252,15 @@ int main(void)
 	/*
 	 * START TIMERS FOR PWM
 	 */
-	//HAL_TIM_Base_Start_IT(&htim9); //?? check
 	RightWhChangedDuty = 1;
 	System_State.TargetAngularVelocityRearRightWh=0;//12800
 	TIM1->CCR1 = 0;
 	HAL_GPIO_WritePin(D2R_GPIO_Port,D2R_Pin,GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(D1R_GPIO_Port,D1R_Pin,GPIO_PIN_SET);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+	//Start Encoder L
 	HAL_TIM_Base_Start_IT(&htim5);
-
+	//Start Encoder R
 	HAL_TIM_Base_Start_IT(&htim3);
 
   /* USER CODE END 2 */
