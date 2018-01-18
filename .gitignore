@@ -8,4 +8,8 @@
 /Projects/Control_Board/.project
 /Projects/Control_Board/.settings
 /RemoteSystemsTempFiles/.project
+/Projects/Control_Board/.settings
+/Projects/TCS_control_board/.settings/*
+/Projects/test/.settings/*
+/Projects/test2/SW4STM32/test2/.settings/*
 .metadata

@@ -127,6 +127,7 @@ NVIC.TIM1_BRK_TIM9_IRQn=true\:5\:0\:false\:false\:true\:true\:true
 NVIC.TIM1_UP_TIM10_IRQn=true\:0\:0\:true\:false\:true\:false\:true
 NVIC.TIM2_IRQn=true\:5\:0\:false\:false\:true\:true\:true
 NVIC.TIM3_IRQn=true\:5\:0\:false\:false\:true\:true\:true
+NVIC.TIM4_IRQn=true\:5\:0\:false\:false\:true\:true\:true
 NVIC.TIM5_IRQn=true\:5\:0\:false\:false\:true\:true\:true
 NVIC.TimeBase=TIM1_UP_TIM10_IRQn
 NVIC.TimeBaseIP=TIM10

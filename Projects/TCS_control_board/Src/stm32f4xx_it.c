@@ -4,7 +4,7 @@
   * @brief   Interrupt Service Routines.
   ******************************************************************************
   *
-  * COPYRIGHT(c) 2017 STMicroelectronics
+  * COPYRIGHT(c) 2018 STMicroelectronics
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -77,6 +77,22 @@ uint8_t LeftWhChangedDuty = 0;
 
 uint32_t rev_counter_rwh = 0;
 
+/*
+ * Veriables for storing revolution difference
+ */
+volatile int R_wh_CNT_prev = 0;
+volatile int L_wh_CNT_prev = 0;
+
+volatile int R_wh_CNT = 0;
+volatile int L_wh_CNT = 0;
+
+volatile int R_wh_CNT_diff = 0;
+volatile int L_wh_CNT_diff = 0;
+
+
+volatile uint8_t R_wh_CNT_overflow = 0;
+volatile uint8_t L_wh_CNT_overflow = 0;
+
 
 //TIM5 (200us) prescaler to 2ms
 uint8_t TIM5_presc_velocity_measurment = 0;
@@ -87,7 +103,9 @@ uint8_t TIM5_presc_velocity_measurment = 0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
+extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim9;
 extern DMA_HandleTypeDef hdma_usart2_rx;
@@ -307,10 +325,33 @@ void TIM1_UP_TIM10_IRQHandler(void)
   if(TIM1->SR & TIM_SR_CC3IF_Msk)//interrupt came from Channel 3 of TIM1 - timebase for angular velocity
   {
 	  //do something - call a function?
-	  TIM1->DIER |= TIM_DIER_CC3IE;//enables interrupt on output compare channel 3
+	  //TIM1->DIER |= TIM_DIER_CC3IE;//enables interrupt on output compare channel 3
+	  R_wh_CNT = TIM3->CNT;
+	  R_wh_CNT_prev = TIM3->CNT;
+
+	  L_wh_CNT = TIM4->CNT;
+	  L_wh_CNT_prev = TIM4->CNT;
+
+	  R_wh_CNT_diff = R_wh_CNT - R_wh_CNT_prev;
+	  L_wh_CNT_diff = L_wh_CNT - L_wh_CNT_prev;
+
   }
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM2 global interrupt.
+*/
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
 }
 
 /**
@@ -321,7 +362,7 @@ void TIM3_IRQHandler(void)
   /* USER CODE BEGIN TIM3_IRQn 0 */
 	if(TIM3->SR & TIM_SR_UIF_Msk)
 	{
-		rev_counter_rwh++;
+		R_wh_CNT_overflow = 1;
 	}
 
   /* USER CODE END TIM3_IRQn 0 */
@@ -329,6 +370,25 @@ void TIM3_IRQHandler(void)
   /* USER CODE BEGIN TIM3_IRQn 1 */
 
   /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM4 global interrupt.
+*/
+void TIM4_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM4_IRQn 0 */
+	if(TIM4->SR & TIM_SR_UIF_Msk)
+	{
+		L_wh_CNT_overflow = 1;
+	}
+
+
+  /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
+  /* USER CODE BEGIN TIM4_IRQn 1 */
+
+  /* USER CODE END TIM4_IRQn 1 */
 }
 
 /**
