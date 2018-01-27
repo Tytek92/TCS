@@ -93,6 +93,10 @@ volatile int L_wh_CNT_diff = 0;
 volatile uint8_t R_wh_CNT_overflow = 0;
 volatile uint8_t L_wh_CNT_overflow = 0;
 
+volatile uint16_t R_wh_memory[10] = 0;
+volatile uint16_t L_wh_memory[10] = 0;
+volatile uint8_t Filter_memory_steps = 0;
+
 
 //TIM5 (200us) prescaler to 2ms
 uint8_t TIM5_presc_velocity_measurment = 0;
@@ -318,24 +322,73 @@ void TIM1_UP_TIM10_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
   /*
-   * TODO: Counting funtion of angular velocity based on TIM5 and TIM3 CNT values
+   * TODO: Counting function of angular velocity based on TIM5 and TIM3 CNT values
    * USE CCxIF bit in TIMx_SR
    * CCxIE in TIMx_DIER
+   *
+   * Timer setup to create interrupt every 100us
+   *
+   * Every 10 samples run filter and avarage velocity.
    */
+
+  Filter_memory_steps++;
+
   if(TIM1->SR & TIM_SR_CC3IF_Msk)//interrupt came from Channel 3 of TIM1 - timebase for angular velocity
   {
-	  //do something - call a function?
-	  //TIM1->DIER |= TIM_DIER_CC3IE;//enables interrupt on output compare channel 3
 	  R_wh_CNT = TIM3->CNT;
-	  R_wh_CNT_prev = TIM3->CNT;
-
 	  L_wh_CNT = TIM4->CNT;
-	  L_wh_CNT_prev = TIM4->CNT;
-
-	  R_wh_CNT_diff = R_wh_CNT - R_wh_CNT_prev;
-	  L_wh_CNT_diff = L_wh_CNT - L_wh_CNT_prev;
+	  /*
+	   * Left wheel
+	   */
+	  if(0 == L_wh_CNT_overflow)//No overflow
+	  {
+		  if(L_wh_CNT < L_wh_CNT_prev)//motion was backwards
+			  L_wh_CNT_diff = L_wh_CNT_prev - L_wh_CNT;
+		  else//motion was forward
+			  L_wh_CNT_diff = L_wh_CNT - L_wh_CNT_prev;
+	  }
+	  else//Counter overflow occured
+	  {
+		  if(L_wh_CNT < L_wh_CNT_prev)//overflow going forward
+			  L_wh_CNT_diff = 65535 - L_wh_CNT_prev + L_wh_CNT;
+		  else//overflow going backward
+			  L_wh_CNT_diff = 65535 - L_wh_CNT + L_wh_CNT_prev;
+		  L_wh_CNT_overflow = 0;
+	  }
+	  /*
+	   * Right wheel
+	   */
+	  if(0 == R_wh_CNT_overflow)//No overflow
+	  {
+		  if(R_wh_CNT < R_wh_CNT_prev)//motion was backwards
+			  R_wh_CNT_diff = R_wh_CNT_prev - R_wh_CNT;
+		  else//motion was forward
+			  R_wh_CNT_diff = R_wh_CNT - R_wh_CNT_prev;
+	  }
+	  else//Counter overflow occured
+	  {
+		  if(R_wh_CNT < R_wh_CNT_prev)//overflow going forward
+			  R_wh_CNT_diff = 65535 - R_wh_CNT_prev + R_wh_CNT;
+		  else//overflow going backward
+			  R_wh_CNT_diff = 65535 - R_wh_CNT + R_wh_CNT_prev;
+		  R_wh_CNT_overflow = 0;
+	  }
 
   }
+  /*
+   * Filter section, first implementation - avarage value, in future implement median filter
+   * runs every 1ms
+   */
+  R_wh_memory[Filter_memory_steps] = R_wh_CNT_diff;
+  L_wh_memory[Filter_memory_steps] = L_wh_CNT_diff;
+  if(10 <= Filter_memory_steps)
+  {
+	  Filter_memory_steps = 0;
+
+  }
+  /*
+   * TODO Calculate velocity
+   */
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
