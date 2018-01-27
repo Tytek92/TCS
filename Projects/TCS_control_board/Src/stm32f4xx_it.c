@@ -371,7 +371,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 			  R_wh_CNT_diff = 65535 - R_wh_CNT_prev + R_wh_CNT;
 		  else//overflow going backward
 			  R_wh_CNT_diff = 65535 - R_wh_CNT + R_wh_CNT_prev;
-		  R_wh_CNT_overflow = 0;
+		  R_wh_CNT_overflow = 0;//bbb
 	  }
 
   }
