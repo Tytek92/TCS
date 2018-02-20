@@ -78,7 +78,7 @@ union TCS_input_data{
 		*/
 		uint32_t Linear_Velocity;			/*Linear target velocity
 			*/
-		uint32_t Turn_Angle;				/*Front axis turn angle
+		uint32_t Turn_Angle;				/*Front axis turn angle 0 to 4000. Straight is 2000
 			*/
 		uint32_t Velocity_Limit;			/*Linear speed boundary
 		 	*/

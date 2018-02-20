@@ -126,11 +126,16 @@ void StartDisplay_Task(void const * argument)
 {
 
   /* USER CODE BEGIN StartDisplay_Task */
+	/*
+	 * This task will take care of electronic differential
+	 * setting proper values to target angular velocity
+	 * which in turn are set points for wheel drive PID controllers
+	 * DELTA is turn angle - it is derived from TCS_input_data.Fields.Turn_Angle after calculations
+	 * Turn_angle takes values from 0 (left); 2000 (straight) to 4000(right)
+	 */
   /* Infinite loop */
   for(;;)
   {
-	  uint32_t val = FrameBuffer.word[0];
-	  uint32_t val2 = FrameBuffer2.word[0];
 
     osDelay(1);
   }

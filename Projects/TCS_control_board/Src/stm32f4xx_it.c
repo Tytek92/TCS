@@ -328,7 +328,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
    *
    * Timer setup to create interrupt every 100us
    *
-   * Every 10 samples run filter and avarage velocity.
+   * Every 10 samples run filter and average velocity.
    */
 
   Filter_memory_steps++;
@@ -376,7 +376,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 
   }
   /*
-   * Filter section, first implementation - avarage value, in future implement median filter
+   * Filter section, first implementation - average value, in future implement median filter
    * runs every 1ms
    */
   R_wh_memory[Filter_memory_steps] = R_wh_CNT_diff;
